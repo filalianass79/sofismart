@@ -1,0 +1,31 @@
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .document-sheet,
+  .document-sheet * {
+    visibility: visible;
+  }
+
+  .document-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm;
+    min-height: 297mm;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .document-preview-toolbar,
+  .document-preview-root > :not(.document-sheet) {
+    display: none !important;
+  }
+}
+
+@media screen {
+  .document-preview-root {
+    background: #f2efe6;
+  }
+}

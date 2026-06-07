@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "DocumentCategory" ADD VALUE 'PROVISIONAL_REGISTRATION_CARD';

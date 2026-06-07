@@ -1,0 +1,16 @@
+# Port 5433 on the host avoids clashing with a local PostgreSQL install on 5432 (common on Windows).
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sofismart
+    ports:
+      - "5433:5432"
+    volumes:
+      - sofismart_pg:/var/lib/postgresql/data
+
+volumes:
+  sofismart_pg:

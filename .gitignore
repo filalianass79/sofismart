@@ -30,8 +30,15 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files (keep a committed template)
+.env
+.env.*
+!.env.example
+!.env.staging.example
+!.env.production.example
+
+/public/demo-documents/*
+!/public/demo-documents/.gitkeep
 
 # vercel
 .vercel
@@ -39,3 +46,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploads utilisateur (factures, documents)
+/public/uploads/*
+!/public/uploads/.gitkeep
+!/public/uploads/invoice-imports/.gitkeep
+
+/src/generated/prisma

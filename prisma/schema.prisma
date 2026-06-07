@@ -1,0 +1,1674 @@
+// SOFISMART — schéma PostgreSQL (Prisma 7)
+// Calculs métier (prix de revient, marge) appliqués dans les routes API
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ——— Enums ———
+
+enum UserRole {
+  ADMIN
+  COMMERCIAL
+  DEPOT_MANAGER
+  ACCOUNTANT
+}
+
+enum EmployeeJobFunction {
+  ADMINISTRATEUR
+  GERANT
+  DIRECTEUR
+  COMMERCIAL
+  EMPLOYE
+  CHAUFFEUR
+  MAGASINIER
+  COMPTABLE
+  RESPONSABLE_DEPOT
+  AUTRE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum AccountStatus {
+  ACTIVE
+  DISABLED
+  PENDING
+  BLOCKED
+}
+
+enum EmployeeDocumentType {
+  CONTRACT
+  CIN_COPY
+  DIPLOMA
+  MEDICAL
+  OTHER
+}
+
+enum VehicleOrigin {
+  NEW
+  USED
+  IMPORTED
+}
+
+enum VehicleStatus {
+  IN_STOCK
+  RESERVED
+  EXIT_PENDING
+  SOLD
+  DELIVERED
+  IN_REPAIR
+  IN_TRANSIT
+  PREPARATION
+}
+
+enum FuelType {
+  DIESEL
+  ESSENCE
+  HYBRIDE
+  ELECTRIQUE
+}
+
+enum TransmissionType {
+  MANUELLE
+  AUTOMATIQUE
+}
+
+enum SupplierType {
+  DEALERSHIP
+  COMPANY
+  INDIVIDUAL
+  IMPORTER
+  GARAGE
+  TRANSPORTER
+  OTHER
+}
+
+enum DepotType {
+  MAIN
+  SECONDARY
+  TRANSIT
+  PREPARATION
+  REPAIR
+}
+
+enum DepotStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum SaleType {
+  CASH
+  CREDIT
+  LEASING
+  TRADE_IN
+  OTHER
+}
+
+enum SaleRecordStatus {
+  DRAFT
+  PENDING_VALIDATION
+  VALIDATED
+  CANCELLED
+}
+
+enum ProformaStatus {
+  DRAFT
+  GENERATED
+  SENT
+  PRINTED
+  CONVERTED_TO_SALE
+  EXPIRED
+  CANCELLED
+}
+
+enum ProformaHistoryAction {
+  CREATED
+  UPDATED
+  GENERATED
+  PREVIEWED
+  PRINTED
+  DOWNLOADED
+  SENT
+  CANCELLED
+  CONVERTED_TO_SALE
+  EXPIRED
+}
+
+enum DeliveryStatus {
+  NOT_STARTED
+  EXIT_PENDING
+  DELIVERED
+  CANCELLED
+}
+
+enum ExitVoucherStatus {
+  PENDING
+  DELIVERED
+  CANCELLED
+  EXPIRED
+}
+
+enum DeliveryNoteStatus {
+  DRAFT
+  GENERATED
+  DELIVERED
+  SIGNED_UPLOADED
+  CANCELLED
+}
+
+enum DeliveryDocumentType {
+  SIGNED_DELIVERY_NOTE
+  DELIVERY_PHOTO
+  OTHER
+}
+
+enum GeneratedDocumentType {
+  EXIT_VOUCHER
+  DELIVERY_NOTE
+  SALES_INVOICE
+}
+
+enum GeneratedDocumentStatus {
+  DRAFT
+  GENERATED
+  SENT
+  DOWNLOADED
+  PRINTED
+  SIGNED_UPLOADED
+  CANCELLED
+}
+
+enum AppNotificationStatus {
+  UNREAD
+  READ
+  PROCESSED
+  ARCHIVED
+}
+
+enum AppNotificationCategory {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  ACTION_REQUIRED
+}
+
+enum NotificationEventType {
+  SALE_VALIDATED
+  SALE_VALIDATION_REQUEST
+  EXIT_VOUCHER_GENERATED
+  EXIT_VOUCHER_SENT
+  DELIVERY_NOTE_GENERATED
+  DELIVERY_CONFIRMED
+  SIGNED_DELIVERY_UPLOADED
+  SALES_INVOICE_GENERATED
+  SALES_INVOICE_SENT_TO_CLIENT
+  PAYMENT_RECEIVED
+  PAYMENT_OVERDUE
+  PURCHASE_VALIDATED
+  PURCHASE_INVOICE_IMPORTED
+  VEHICLE_STOCK_ENTRY
+  VEHICLE_TRANSFERRED
+  USER_CREATED
+  PASSWORD_RESET
+  PASSWORD_CHANGED
+  ACCOUNT_BLOCKED
+  DOCUMENT_UPLOADED
+  ACTION_REQUIRES_VALIDATION
+}
+
+enum EmailMessageStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  SPAM
+  CANCELLED
+}
+
+enum EmailType {
+  TRANSACTIONAL
+  NOTIFICATION
+  REMINDER
+  DOCUMENT
+  SECURITY
+  SYSTEM
+}
+
+enum NotificationChannel {
+  INTERNAL
+  WHATSAPP
+  EMAIL
+}
+
+enum WhatsAppMessageStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+  READ
+}
+
+enum SupplierRecordStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum PaymentValidationStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+  CANCELLED
+}
+
+enum PaymentCategory {
+  CLIENT
+  SUPPLIER
+  PURCHASE
+  SALE
+  MISC
+}
+
+enum PurchaseType {
+  LOCAL
+  IMPORT
+  DEALERSHIP
+  INDIVIDUAL
+  GROUP
+}
+
+enum Currency {
+  MAD
+  EUR
+  USD
+}
+
+enum PurchaseStatus {
+  DRAFT
+  VALIDATED
+  CANCELLED
+}
+
+enum PurchasePaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+enum InvoiceImportStatus {
+  PENDING
+  PROCESSING
+  EXTRACTED
+  FAILED
+  DRAFT_SAVED
+  VALIDATED
+}
+
+enum InvoiceExtractionStatus {
+  PENDING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+enum ExtractedFieldStatus {
+  DETECTED
+  VERIFIED
+  CORRECTED
+  IGNORED
+}
+
+enum InvoiceLineType {
+  VEHICLE
+  ACCESSORY
+  FEE
+  DISCOUNT
+  OTHER
+}
+
+enum VehicleCondition {
+  EXCELLENT
+  GOOD
+  AVERAGE
+  NEEDS_REPAIR
+}
+
+enum StockMovementType {
+  INITIAL
+  TRANSFER
+  ADJUSTMENT
+  SALE_EXIT_PENDING
+  SALE_EXIT_CONFIRMED
+}
+
+enum StockMovementStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum ClientType {
+  INDIVIDUAL
+  COMPANY
+  RESELLER
+}
+
+enum Civility {
+  MR
+  MRS
+  MISS
+}
+
+enum AcquisitionSource {
+  SOCIAL_MEDIA
+  WEBSITE
+  REFERRAL
+  ADVERTISING
+  PHONE_CALL
+  SHOWROOM
+  OTHER
+}
+
+enum FinancialStatus {
+  GOOD_PAYER
+  AVERAGE
+  RISK
+  BLOCKED
+}
+
+enum RelationshipStatus {
+  PROSPECT
+  ACTIVE
+  LOYAL
+  INACTIVE
+  VIP
+}
+
+enum ClientDocumentType {
+  CIN
+  PASSPORT
+  PROOF_OF_ADDRESS
+  SALE_CONTRACT
+  PURCHASE_ORDER
+  PAYMENT_RECEIPT
+  FINANCING
+  INSURANCE
+  ICE_DOC
+  RC_DOC
+  TAX_ID_DOC
+  PATENT
+  COMPANY_STATUTES
+  INVOICE
+  BANK_DOCUMENT
+  OTHER
+}
+
+enum InteractionType {
+  NOTE
+  CALL
+  TASK
+  FOLLOW_UP
+  MEETING
+}
+
+enum ReminderStatus {
+  PENDING
+  DONE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CHECK
+  CREDIT
+  BILL_OF_EXCHANGE
+  OTHER
+}
+
+enum PaymentDirection {
+  TO_SUPPLIER
+  FROM_CLIENT
+}
+
+enum SalePaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+enum DocumentCategory {
+  PURCHASE_INVOICE
+  SALE_INVOICE
+  REGISTRATION_CARD
+  PROVISIONAL_REGISTRATION_CARD
+  CONTRACT
+  CUSTOMS
+  VEHICLE_PHOTO
+  PAYMENT_RECEIPT
+  CLIENT_DOC
+  SUPPLIER_DOC
+  PURCHASE_ORDER
+  CONFORMITY_CERT
+  TRANSIT_DOC
+  FINANCING_CONTRACT
+  EXPERTISE_REPORT
+  PROVISIONAL_INSURANCE
+  OTHER
+}
+
+enum PurchaseFeeType {
+  TRANSPORT
+  CUSTOMS
+  TRANSIT
+  HOMOLOGATION
+  REPAIR
+  CLEANING
+  REGISTRATION
+  INSURANCE
+  EXPERTISE
+  COMMISSION
+  OTHER
+}
+
+// ——— NextAuth (comptes optionnels / extensibilité) ———
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ——— RH & accès ———
+
+model Employee {
+  id                String              @id @default(cuid())
+  reference         String              @unique
+  firstName         String
+  lastName          String
+  cin               String?             @unique
+  personalEmail     String?
+  professionalEmail String?             @unique
+  phone             String?
+  address           String?             @db.Text
+  city              String?
+  birthDate         DateTime?
+  hireDate          DateTime?
+  jobFunction       EmployeeJobFunction
+  department        String?
+  depotId           String?
+  depot             Depot?              @relation(fields: [depotId], references: [id])
+  contractType      String?
+  salary            Decimal?            @db.Decimal(14, 2)
+  status            EmployeeStatus      @default(ACTIVE)
+  profilePhotoUrl   String?
+  notes             String?             @db.Text
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  user              User?
+  documents         EmployeeDocument[]
+}
+
+model EmployeeDocument {
+  id           String               @id @default(cuid())
+  employeeId   String
+  employee     Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type         EmployeeDocumentType @default(OTHER)
+  title        String?
+  fileName     String
+  fileUrl      String
+  fileMimeType String?
+  fileSize     Int?
+  uploadedById String?
+  uploadedBy   User?                @relation("EmployeeDocUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime             @default(now())
+}
+
+model Role {
+  id              String           @id @default(cuid())
+  code            String           @unique
+  name            String
+  description     String?          @db.Text
+  isSystem        Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  users           User[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  module          String
+  action          String
+  description     String?
+  createdAt       DateTime         @default(now())
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([module, action])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  allowed      Boolean    @default(true)
+
+  @@unique([roleId, permissionId])
+}
+
+model UserPermission {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  allowed      Boolean    @default(true)
+
+  @@unique([userId, permissionId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actorUser   User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  action      String
+  module      String
+  targetType  String?
+  targetId    String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([module, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model UserSession {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken String    @unique
+  ipAddress    String?
+  userAgent    String?   @db.Text
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+
+  @@index([userId])
+}
+
+// ——— Utilisateurs ———
+
+model User {
+  id                  String           @id @default(cuid())
+  employeeId          String?          @unique
+  employee            Employee?        @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  username            String?          @unique
+  email               String           @unique
+  recoveryEmail       String?
+  emailVerified       DateTime?
+  name                String?
+  image               String?
+  passwordHash        String
+  role                UserRole         @default(COMMERCIAL)
+  roleId              String?
+  appRole             Role?            @relation(fields: [roleId], references: [id])
+  accountStatus       AccountStatus    @default(ACTIVE)
+  passwordMustChange  Boolean          @default(false)
+  temporaryPassword   Boolean          @default(false)
+  twoFactorEnabled    Boolean          @default(false)
+  lastLoginAt         DateTime?
+  depotId             String?
+  depot               Depot?           @relation(fields: [depotId], references: [id])
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  accounts            Account[]
+  sessions            Session[]
+  stockMovements      StockMovement[]
+  documents           Document[]       @relation("UploadedBy")
+  employeeDocuments   EmployeeDocument[] @relation("EmployeeDocUploader")
+  userPermissions     UserPermission[]
+  auditLogs           AuditLog[]       @relation("AuditActor")
+  userSessions        UserSession[]    @relation("UserSessions")
+  assignedClients     Client[]         @relation("ClientCommercial")
+  clientInteractions  ClientInteraction[] @relation("InteractionEmployee")
+  clientReminders     ClientReminder[] @relation("ReminderAssignee")
+  clientDocuments     ClientDocument[] @relation("ClientDocUploader")
+  managedDepots       Depot[]          @relation("DepotManager")
+  commercialSales     Sale[]           @relation("SaleCommercial")
+  validatedSales      Sale[]           @relation("SaleValidator")
+  proformasCommercial ProformaInvoice[] @relation("ProformaCommercial")
+  proformasCreated    ProformaInvoice[] @relation("ProformaCreator")
+  proformaHistory     ProformaHistory[] @relation("ProformaHistoryActor")
+  assignedExitVouchers ExitVoucher[]   @relation("ExitVoucherAssignee")
+  deliveredExitVouchers ExitVoucher[]  @relation("ExitVoucherDeliverer")
+  cancelledExitVouchers ExitVoucher[]  @relation("ExitVoucherCanceller")
+  generatedDeliveryNotes DeliveryNote[] @relation("DeliveryNoteGenerator")
+  deliveredDeliveryNotes DeliveryNote[] @relation("DeliveryNoteDeliverer")
+  uploadedDeliveryDocuments DeliveryDocument[] @relation("DeliveryDocUploader")
+  appNotifications           AppNotification[]
+  notificationPreferences    UserNotificationPreference?
+  whatsappMessagesReceived   WhatsAppMessage[]           @relation("WhatsAppRecipient")
+  emailMessagesReceived      EmailMessage[]              @relation("EmailRecipient")
+  userEmailPreference        UserEmailPreference?
+  generatedDocuments  GeneratedDocument[]  @relation("GeneratedDocuments")
+  documentHistoryActs DocumentHistory[]    @relation("DocumentHistoryActor")
+  invoiceImports      InvoiceImport[]      @relation("InvoiceImportUploader")
+}
+
+// ——— Dépôts ———
+
+model Depot {
+  id           String      @id @default(cuid())
+  reference    String      @unique @default("DEP-LEGACY")
+  name         String
+  address      String?     @db.Text
+  city         String?
+  phone        String?
+  managerId    String?
+  manager      User?       @relation("DepotManager", fields: [managerId], references: [id], onDelete: SetNull)
+  maxCapacity  Int         @default(50)
+  depotType    DepotType   @default(MAIN)
+  status       DepotStatus @default(ACTIVE)
+  notes        String?     @db.Text
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  vehicles     Vehicle[]
+  users        User[]
+  employees    Employee[]
+  movementsFrom StockMovement[] @relation("FromDepot")
+  movementsTo   StockMovement[] @relation("ToDepot")
+  sales         Sale[]          @relation("SaleDepot")
+  exitVouchers  ExitVoucher[]
+  deliveryNotes DeliveryNote[]
+}
+
+// ——— Fournisseurs & clients ———
+
+model Supplier {
+  id                     String               @id @default(cuid())
+  reference              String               @unique @default("FRN-LEGACY")
+  type                   SupplierType
+  name                   String
+  firstName              String?
+  lastName               String?
+  companyName            String?
+  tradeName              String?
+  ice                    String?              @unique
+  cin                    String?              @unique
+  rc                     String?
+  taxId                  String?
+  patent                 String?
+  phone                  String?
+  secondaryPhone         String?
+  email                  String?
+  address                String?              @db.Text
+  city                   String?
+  country                String?              @default("Maroc")
+  contactName            String?
+  contactRole            String?
+  contactPhone           String?
+  preferredPaymentMethod PaymentMethod?
+  paymentDelay           Int?
+  bankName               String?
+  iban                   String?
+  balance                Decimal              @default(0) @db.Decimal(14, 2)
+  status                 SupplierRecordStatus @default(ACTIVE)
+  notes                  String?              @db.Text
+  isArchived             Boolean              @default(false)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  purchases              Purchase[]
+  documents              Document[]
+  payments               Payment[]            @relation("SupplierPayments")
+}
+
+model Client {
+  id                     String              @id @default(cuid())
+  reference              String              @unique @default("CLI-LEGACY")
+  type                   ClientType
+  name                   String
+  civility               Civility?
+  firstName              String?
+  lastName               String?
+  companyName            String?
+  tradeName              String?
+  cin                    String?             @unique
+  ice                    String?             @unique
+  rc                     String?
+  taxId                  String?
+  patent                 String?
+  activity               String?
+  birthDate              DateTime?
+  phone                  String?
+  secondaryPhone         String?
+  email                  String?
+  website                String?
+  address                String?             @db.Text
+  city                   String?
+  country                String?             @default("Maroc")
+  profession             String?
+  mainContactName        String?
+  mainContactRole        String?
+  mainContactPhone       String?
+  mainContactEmail       String?
+  assignedCommercialId   String?
+  assignedCommercial     User?               @relation("ClientCommercial", fields: [assignedCommercialId], references: [id], onDelete: SetNull)
+  acquisitionSource      AcquisitionSource?
+  preferredPaymentMethod PaymentMethod?
+  paymentTerms           String?
+  paymentDelay           Int?
+  bankName               String?
+  iban                   String?
+  creditLimit            Decimal?            @db.Decimal(14, 2)
+  currentBalance         Decimal             @default(0) @db.Decimal(14, 2)
+  outstandingAmount      Decimal             @default(0) @db.Decimal(14, 2)
+  vatExempt              Boolean             @default(false)
+  financialStatus        FinancialStatus     @default(GOOD_PAYER)
+  relationshipStatus     RelationshipStatus  @default(PROSPECT)
+  notes                  String?             @db.Text
+  isArchived             Boolean             @default(false)
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  sales                  Sale[]
+  proformas              ProformaInvoice[]
+  documents              Document[]
+  clientDocuments        ClientDocument[]
+  interactions           ClientInteraction[]
+  reminders              ClientReminder[]
+  payments               Payment[]           @relation("ClientPayments")
+  deliveryNotes          DeliveryNote[]
+  deliveryDocuments      DeliveryDocument[]
+
+  @@index([assignedCommercialId, isArchived])
+  @@index([relationshipStatus])
+}
+
+model ClientDocument {
+  id           String             @id @default(cuid())
+  clientId     String
+  client       Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  type         ClientDocumentType @default(OTHER)
+  title        String?
+  fileName     String
+  fileUrl      String
+  fileMimeType String?
+  fileSize     Int?
+  notes        String?            @db.Text
+  uploadedById String?
+  uploadedBy   User?              @relation("ClientDocUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime           @default(now())
+}
+
+model ClientInteraction {
+  id               String          @id @default(cuid())
+  clientId         String
+  client           Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  type             InteractionType
+  date             DateTime        @default(now())
+  employeeId       String?
+  employee         User?           @relation("InteractionEmployee", fields: [employeeId], references: [id], onDelete: SetNull)
+  summary          String          @db.Text
+  nextAction       String?
+  nextFollowUpDate DateTime?
+  createdAt        DateTime        @default(now())
+}
+
+model ClientReminder {
+  id           String         @id @default(cuid())
+  clientId     String
+  client       Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?        @db.Text
+  dueDate      DateTime
+  status       ReminderStatus @default(PENDING)
+  assignedToId String?
+  assignedTo   User?          @relation("ReminderAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+}
+
+// ——— Véhicule ———
+
+// ——— Catalogue véhicules (paramètres) ———
+
+model Brand {
+  id        String         @id @default(cuid())
+  label     String         @unique
+  logo      String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  models    VehicleModel[]
+  vehicles  Vehicle[]
+}
+
+model VehicleModel {
+  id        String   @id @default(cuid())
+  label     String
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  photo     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicles  Vehicle[]
+
+  @@unique([brandId, label])
+}
+
+model Vehicle {
+  id                    String            @id @default(cuid())
+  internalRef           String            @unique
+  brandId               String
+  brand                 Brand             @relation(fields: [brandId], references: [id])
+  modelId               String
+  carModel              VehicleModel      @relation(fields: [modelId], references: [id])
+  version               String?
+  year                  Int
+  firstRegistrationDate DateTime?
+  mileage               Int               @default(0)
+  fuel                  FuelType?
+  transmission          TransmissionType?
+  color                 String?
+  interiorColor         String?
+  fiscalPower           Int?
+  engineSize            String?
+  vin                   String?           @unique
+  plate                 String?           @unique
+  matriculeW            String?
+  origin                VehicleOrigin
+  originCountry         String?
+  vehicleCondition      VehicleCondition?
+  conditionNotes        String?           @db.Text
+  purchasePrice         Decimal           @default(0) @db.Decimal(14, 2)
+  extraFeesTotal        Decimal           @default(0) @db.Decimal(14, 2)
+  costPrice             Decimal           @default(0) @db.Decimal(14, 2)
+  targetSalePrice       Decimal?          @db.Decimal(14, 2)
+  finalSalePrice        Decimal?          @db.Decimal(14, 2)
+  status                VehicleStatus     @default(IN_STOCK)
+  isArchived            Boolean           @default(false)
+  depotId               String
+  depot                 Depot             @relation(fields: [depotId], references: [id])
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  purchase              Purchase?
+  sale                  Sale?
+  proformas             ProformaInvoice[]
+  photos                VehiclePhoto[]
+  documents             Document[]
+  movements             StockMovement[]
+  exitVouchers          ExitVoucher[]
+  deliveryNotes         DeliveryNote[]
+  deliveryDocuments     DeliveryDocument[]
+
+  @@index([status, depotId])
+  @@index([depotId, createdAt])
+}
+
+model VehiclePhoto {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  path      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// ——— Achat ———
+
+model Purchase {
+  id                 String                @id @default(cuid())
+  reference          String                @unique
+  vehicleId          String?               @unique
+  vehicle            Vehicle?              @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  supplierId         String
+  supplier           Supplier              @relation(fields: [supplierId], references: [id])
+  invoiceNumber      String?
+  purchaseDate       DateTime
+  invoiceDate        DateTime?
+  purchaseType       PurchaseType          @default(LOCAL)
+  currency           Currency              @default(MAD)
+  amountHT           Decimal               @default(0) @db.Decimal(14, 2)
+  taxAmount          Decimal               @default(0) @db.Decimal(14, 2)
+  amountTTC          Decimal               @default(0) @db.Decimal(14, 2)
+  discount           Decimal               @default(0) @db.Decimal(14, 2)
+  totalPurchasePrice Decimal               @default(0) @db.Decimal(14, 2)
+  totalExpenses      Decimal               @default(0) @db.Decimal(14, 2)
+  costPrice          Decimal               @default(0) @db.Decimal(14, 2)
+  basePrice          Decimal               @default(0) @db.Decimal(14, 2)
+  advancePaid        Decimal               @default(0) @db.Decimal(14, 2)
+  paymentMethod      PaymentMethod?
+  paymentStatus      PurchasePaymentStatus @default(UNPAID)
+  status             PurchaseStatus        @default(DRAFT)
+  notes              String?               @db.Text
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  fees               PurchaseFee[]
+  payments           Payment[]             @relation("PurchasePayments")
+  documents          Document[]
+  stockMovements     StockMovement[]       @relation("PurchaseMovements")
+  invoiceImports     InvoiceImport[]
+}
+
+model PurchaseFee {
+  id         String          @id @default(cuid())
+  purchaseId String
+  purchase   Purchase        @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  type       PurchaseFeeType @default(OTHER)
+  amount     Decimal         @db.Decimal(14, 2)
+  label      String?
+  expenseDate DateTime       @default(now())
+  notes      String?
+  documentId String?
+}
+
+// ——— Import facture achat (OCR) ———
+
+model InvoiceImport {
+  id                String                  @id @default(cuid())
+  fileName          String
+  fileUrl           String
+  fileMimeType      String
+  fileSize          Int
+  pageCount         Int                     @default(1)
+  status            InvoiceImportStatus     @default(PENDING)
+  extractionStatus  InvoiceExtractionStatus @default(PENDING)
+  rawOcrText        String?                 @db.Text
+  structuredData    Json?
+  confidenceScore   Decimal?                @db.Decimal(5, 4)
+  purchaseId        String?
+  purchase          Purchase?               @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  uploadedById      String?
+  uploadedBy        User?                   @relation("InvoiceImportUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  extractedFields   InvoiceExtractedField[]
+  lineItems         InvoiceLineItem[]
+  documents         Document[]
+
+  @@index([status, createdAt])
+  @@index([uploadedById])
+}
+
+model InvoiceExtractedField {
+  id              String               @id @default(cuid())
+  invoiceImportId String
+  invoiceImport   InvoiceImport        @relation(fields: [invoiceImportId], references: [id], onDelete: Cascade)
+  fieldKey        String
+  fieldLabel      String
+  extractedValue  String?              @db.Text
+  correctedValue  String?              @db.Text
+  confidence      Decimal              @default(0) @db.Decimal(5, 4)
+  sourceText      String?              @db.Text
+  boundingBox     Json?
+  status          ExtractedFieldStatus @default(DETECTED)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([invoiceImportId, fieldKey])
+}
+
+model InvoiceLineItem {
+  id              String          @id @default(cuid())
+  invoiceImportId String
+  invoiceImport   InvoiceImport   @relation(fields: [invoiceImportId], references: [id], onDelete: Cascade)
+  designation     String?         @db.Text
+  quantity        Decimal         @default(1) @db.Decimal(12, 4)
+  discount        Decimal         @default(0) @db.Decimal(14, 2)
+  unitPriceHT     Decimal         @default(0) @db.Decimal(14, 2)
+  taxRate         Decimal         @default(20) @db.Decimal(5, 2)
+  taxAmount       Decimal         @default(0) @db.Decimal(14, 2)
+  totalHT         Decimal         @default(0) @db.Decimal(14, 2)
+  totalTTC        Decimal         @default(0) @db.Decimal(14, 2)
+  lineType        InvoiceLineType @default(OTHER)
+  confidence      Decimal         @default(0) @db.Decimal(5, 4)
+  sortOrder       Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([invoiceImportId])
+}
+
+// ——— Vente ———
+
+model Sale {
+  id                    String             @id @default(cuid())
+  reference             String             @unique @default("VTE-LEGACY")
+  vehicleId             String             @unique
+  vehicle               Vehicle            @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  clientId              String?
+  client                Client?            @relation(fields: [clientId], references: [id])
+  depotId               String?
+  depot                 Depot?             @relation("SaleDepot", fields: [depotId], references: [id])
+  commercialId          String?
+  commercial            User?              @relation("SaleCommercial", fields: [commercialId], references: [id], onDelete: SetNull)
+  validatedById         String?
+  validatedBy           User?              @relation("SaleValidator", fields: [validatedById], references: [id], onDelete: SetNull)
+  validatedAt           DateTime?
+  saleDate              DateTime
+  price                 Decimal            @db.Decimal(14, 2)
+  discount              Decimal            @default(0) @db.Decimal(14, 2)
+  taxAmount             Decimal            @default(0) @db.Decimal(14, 2)
+  finalPrice            Decimal            @default(0) @db.Decimal(14, 2)
+  costPrice             Decimal            @default(0) @db.Decimal(14, 2)
+  margin                Decimal            @default(0) @db.Decimal(14, 2)
+  marginRate            Decimal?           @db.Decimal(8, 4)
+  advanceReceived       Decimal            @default(0) @db.Decimal(14, 2)
+  saleType              SaleType           @default(CASH)
+  paymentMethod         PaymentMethod?
+  paymentStatus         SalePaymentStatus  @default(UNPAID)
+  status                SaleRecordStatus   @default(VALIDATED)
+  deliveryStatus        DeliveryStatus     @default(NOT_STARTED)
+  warranty              Boolean            @default(false)
+  warrantyDurationMonths Int?
+  specialConditions     String?            @db.Text
+  draftClient           Json?
+  cancelReason          String?            @db.Text
+  notes                 String?            @db.Text
+  invoiceNumber         String?            @unique
+  invoicePdfPath        String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  payments              Payment[]          @relation("SalePayments")
+  documents             Document[]
+  stockMovements        StockMovement[]    @relation("SaleMovements")
+  exitVoucher           ExitVoucher?
+  deliveryNote          DeliveryNote?
+  deliveryDocuments     DeliveryDocument[]
+  convertedFromProforma ProformaInvoice?
+
+  @@index([status, saleDate])
+  @@index([commercialId, status])
+  @@index([clientId])
+}
+
+model ProformaInvoice {
+  id                   String          @id @default(cuid())
+  reference            String          @unique
+  clientId             String?
+  client               Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  temporaryClientData  Json?
+  vehicleId            String
+  vehicle              Vehicle         @relation(fields: [vehicleId], references: [id])
+  commercialId         String
+  commercial           User            @relation("ProformaCommercial", fields: [commercialId], references: [id], onDelete: Restrict)
+  proformaDate         DateTime
+  validityDate         DateTime
+  priceHT              Decimal         @db.Decimal(14, 2)
+  discount             Decimal         @default(0) @db.Decimal(14, 2)
+  accessoryFees        Decimal         @default(0) @db.Decimal(14, 2)
+  taxRate              Decimal         @default(20) @db.Decimal(5, 2)
+  taxAmount            Decimal         @default(0) @db.Decimal(14, 2)
+  totalTTC             Decimal         @default(0) @db.Decimal(14, 2)
+  paymentTerms         String?         @db.Text
+  observations         String?         @db.Text
+  status               ProformaStatus  @default(DRAFT)
+  pdfUrl               String?
+  generatedAt          DateTime?
+  printedAt            DateTime?
+  sentAt               DateTime?
+  convertedSaleId      String?         @unique
+  convertedSale        Sale?           @relation(fields: [convertedSaleId], references: [id], onDelete: SetNull)
+  createdById          String
+  createdBy            User            @relation("ProformaCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  lines                ProformaLine[]
+  history              ProformaHistory[]
+
+  @@index([status, proformaDate])
+  @@index([commercialId])
+  @@index([clientId])
+  @@index([vehicleId])
+  @@index([validityDate])
+}
+
+model ProformaLine {
+  id                String          @id @default(cuid())
+  proformaInvoiceId String
+  proformaInvoice   ProformaInvoice @relation(fields: [proformaInvoiceId], references: [id], onDelete: Cascade)
+  designation       String
+  quantity          Decimal         @default(1) @db.Decimal(10, 2)
+  unitPriceHT       Decimal         @db.Decimal(14, 2)
+  discount          Decimal         @default(0) @db.Decimal(14, 2)
+  taxRate           Decimal         @default(20) @db.Decimal(5, 2)
+  taxAmount         Decimal         @default(0) @db.Decimal(14, 2)
+  totalHT           Decimal         @default(0) @db.Decimal(14, 2)
+  totalTTC          Decimal         @default(0) @db.Decimal(14, 2)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+
+  @@index([proformaInvoiceId])
+}
+
+model ProformaHistory {
+  id                String                 @id @default(cuid())
+  proformaInvoiceId String
+  proformaInvoice   ProformaInvoice        @relation(fields: [proformaInvoiceId], references: [id], onDelete: Cascade)
+  action            ProformaHistoryAction
+  userId            String?
+  user              User?                  @relation("ProformaHistoryActor", fields: [userId], references: [id], onDelete: SetNull)
+  metadata          Json?
+  createdAt         DateTime               @default(now())
+
+  @@index([proformaInvoiceId, createdAt])
+}
+
+model ExitVoucher {
+  id                       String            @id @default(cuid())
+  reference                String            @unique
+  saleId                   String            @unique
+  sale                     Sale              @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  vehicleId                String
+  vehicle                  Vehicle           @relation(fields: [vehicleId], references: [id])
+  depotId                  String
+  depot                    Depot             @relation(fields: [depotId], references: [id])
+  assignedWarehouseUserId  String?
+  assignedWarehouseUser    User?             @relation("ExitVoucherAssignee", fields: [assignedWarehouseUserId], references: [id], onDelete: SetNull)
+  secureToken              String            @unique
+  pdfPath                  String?
+  status                   ExitVoucherStatus @default(PENDING)
+  message                  String?           @db.Text
+  generatedAt              DateTime          @default(now())
+  deliveredAt              DateTime?
+  deliveredById            String?
+  deliveredBy              User?             @relation("ExitVoucherDeliverer", fields: [deliveredById], references: [id], onDelete: SetNull)
+  deliveryNotes            String?           @db.Text
+  deliveryPhotoUrl         String?
+  cancelledAt              DateTime?
+  cancelledById            String?
+  cancelledBy              User?             @relation("ExitVoucherCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  cancellationReason       String?           @db.Text
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  deliveryNote             DeliveryNote?
+
+  @@index([depotId, status])
+  @@index([secureToken])
+}
+
+model DeliveryNote {
+  id                String             @id @default(cuid())
+  reference         String             @unique
+  saleId            String             @unique
+  sale              Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  vehicleId         String
+  vehicle           Vehicle            @relation(fields: [vehicleId], references: [id])
+  clientId          String
+  client            Client             @relation(fields: [clientId], references: [id])
+  depotId           String
+  depot             Depot              @relation(fields: [depotId], references: [id])
+  exitVoucherId     String?            @unique
+  exitVoucher       ExitVoucher?       @relation(fields: [exitVoucherId], references: [id], onDelete: SetNull)
+  generatedById     String?
+  generatedBy       User?              @relation("DeliveryNoteGenerator", fields: [generatedById], references: [id], onDelete: SetNull)
+  deliveredById     String?
+  deliveredBy       User?              @relation("DeliveryNoteDeliverer", fields: [deliveredById], references: [id], onDelete: SetNull)
+  qrToken           String             @unique
+  pdfUrl            String?
+  signedDocumentUrl String?
+  status            DeliveryNoteStatus @default(GENERATED)
+  generatedAt       DateTime           @default(now())
+  deliveredAt       DateTime?
+  deliveryDate      DateTime?
+  deliveryTime      String?
+  mileageAtDelivery Int?
+  checklist         Json?
+  observations      String?            @db.Text
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  documents         DeliveryDocument[]
+
+  @@index([depotId, status])
+  @@index([qrToken])
+}
+
+model DeliveryDocument {
+  id             String               @id @default(cuid())
+  deliveryNoteId String
+  deliveryNote   DeliveryNote         @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
+  saleId         String
+  sale           Sale                 @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  vehicleId      String
+  vehicle        Vehicle              @relation(fields: [vehicleId], references: [id])
+  clientId       String
+  client         Client               @relation(fields: [clientId], references: [id])
+  type           DeliveryDocumentType @default(SIGNED_DELIVERY_NOTE)
+  title          String?
+  fileName       String
+  fileUrl        String
+  fileMimeType   String?
+  fileSize       Int?
+  uploadedById   String?
+  uploadedBy     User?                @relation("DeliveryDocUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  notes          String?              @db.Text
+  createdAt      DateTime             @default(now())
+
+  @@index([deliveryNoteId])
+  @@index([saleId])
+}
+
+model AppNotification {
+  id        String                  @id @default(cuid())
+  userId    String
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String                  @db.Text
+  link      String?
+  status    AppNotificationStatus   @default(UNREAD)
+  category  AppNotificationCategory @default(INFO)
+  module    String?
+  eventType NotificationEventType?
+  type      String                  @default("INFO")
+  metadata  Json?
+  createdAt DateTime                @default(now())
+  readAt    DateTime?
+  archivedAt DateTime?
+
+  @@index([userId, status, createdAt])
+  @@index([userId, eventType])
+}
+
+model WhatsAppMessage {
+  id                String                @id @default(cuid())
+  recipientUserId   String?
+  recipientUser     User?                 @relation("WhatsAppRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  recipientPhone    String
+  recipientName     String?
+  eventType         NotificationEventType?
+  templateKey       String?
+  messageBody       String                @db.Text
+  provider          String                @default("meta")
+  providerMessageId String?
+  status            WhatsAppMessageStatus @default(PENDING)
+  errorMessage      String?               @db.Text
+  retryCount        Int                   @default(0)
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([status, createdAt])
+  @@index([recipientUserId])
+  @@index([providerMessageId])
+}
+
+model NotificationTemplate {
+  id        String              @id @default(cuid())
+  key       String
+  name      String
+  channel   NotificationChannel
+  eventType NotificationEventType
+  subject   String?
+  body      String              @db.Text
+  variables String[]            @default([])
+  isActive  Boolean             @default(true)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([key, channel])
+  @@index([eventType, channel])
+}
+
+model NotificationSetting {
+  id              String                @id @default(cuid())
+  eventType       NotificationEventType @unique
+  internalEnabled Boolean               @default(true)
+  whatsappEnabled Boolean               @default(false)
+  recipientRoles  String[]              @default([])
+  recipientUserIds String[]             @default([])
+  sendToClient    Boolean               @default(false)
+  sendToEmployee  Boolean               @default(true)
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+model UserNotificationPreference {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  internalEnabled  Boolean  @default(true)
+  whatsappEnabled  Boolean  @default(true)
+  whatsappOptIn    Boolean  @default(false)
+  phoneOverride    String?
+  quietHoursStart  String?
+  quietHoursEnd    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model EmailMessage {
+  id                 String              @id @default(cuid())
+  recipientUserId    String?
+  recipientUser      User?               @relation("EmailRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  recipientClientId  String?
+  recipientSupplierId String?
+  recipientEmail     String
+  recipientName      String?
+  cc                 String[]            @default([])
+  bcc                String[]            @default([])
+  eventType          NotificationEventType?
+  emailType          EmailType           @default(TRANSACTIONAL)
+  templateKey        String?
+  subject            String
+  htmlBody           String              @db.Text
+  textBody           String?             @db.Text
+  provider           String              @default("smtp")
+  providerMessageId  String?
+  status             EmailMessageStatus  @default(QUEUED)
+  errorMessage       String?             @db.Text
+  retryCount         Int                 @default(0)
+  scheduledAt        DateTime?
+  sentAt             DateTime?
+  deliveredAt        DateTime?
+  openedAt           DateTime?
+  clickedAt          DateTime?
+  bouncedAt          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  attachments        EmailAttachment[]
+
+  @@index([status, createdAt])
+  @@index([recipientUserId])
+  @@index([recipientEmail])
+  @@index([eventType])
+  @@index([providerMessageId])
+}
+
+model EmailAttachment {
+  id             String       @id @default(cuid())
+  emailMessageId String
+  emailMessage   EmailMessage @relation(fields: [emailMessageId], references: [id], onDelete: Cascade)
+  documentId     String?
+  fileName       String
+  fileUrl        String
+  fileMimeType   String?
+  fileSize       Int?
+  createdAt      DateTime     @default(now())
+
+  @@index([emailMessageId])
+}
+
+model EmailTemplate {
+  id              String                @id @default(cuid())
+  key             String                @unique
+  name            String
+  eventType       NotificationEventType
+  subjectTemplate String
+  htmlTemplate    String                @db.Text
+  textTemplate    String?               @db.Text
+  variables       String[]              @default([])
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([eventType])
+}
+
+model EmailNotificationSetting {
+  id              String                @id @default(cuid())
+  eventType       NotificationEventType @unique
+  emailEnabled    Boolean               @default(false)
+  recipientRoles  String[]              @default([])
+  recipientUserIds String[]             @default([])
+  sendToClient    Boolean               @default(false)
+  sendToSupplier  Boolean               @default(false)
+  ccEmails        String[]              @default([])
+  bccEmails       String[]              @default([])
+  attachDocuments Boolean               @default(false)
+  attachmentTypes String[]              @default([])
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+model UserEmailPreference {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailEnabled       Boolean  @default(true)
+  alternativeEmail   String?
+  disabledEventTypes String[] @default([])
+  quietHoursStart    String?
+  quietHoursEnd      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ——— Paiements ———
+
+model Payment {
+  id                String                   @id @default(cuid())
+  paymentReference  String?                  @unique
+  category          PaymentCategory?
+  amount            Decimal                  @db.Decimal(14, 2)
+  currency          Currency                 @default(MAD)
+  paidAt            DateTime                 @default(now())
+  method            PaymentMethod
+  direction         PaymentDirection
+  validationStatus  PaymentValidationStatus  @default(VALIDATED)
+  reference         String?
+  bank              String?
+  checkNumber       String?
+  transferReference String?
+  dueDate           DateTime?
+  cancelReason      String?                  @db.Text
+  notes             String?                  @db.Text
+  supplierId        String?
+  supplier          Supplier?                @relation("SupplierPayments", fields: [supplierId], references: [id], onDelete: SetNull)
+  purchaseId        String?
+  purchase          Purchase?                @relation("PurchasePayments", fields: [purchaseId], references: [id], onDelete: SetNull)
+  saleId            String?
+  sale              Sale?                    @relation("SalePayments", fields: [saleId], references: [id], onDelete: SetNull)
+  clientId          String?
+  client            Client?                  @relation("ClientPayments", fields: [clientId], references: [id], onDelete: SetNull)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  documents         Document[]               @relation("PaymentDocuments")
+}
+
+// ——— Documents ———
+
+model Document {
+  id           String           @id @default(cuid())
+  category     DocumentCategory
+  title        String?
+  originalName String
+  path         String
+  mimeType     String?
+  size         Int?
+  notes        String?          @db.Text
+  vehicleId    String?
+  vehicle      Vehicle?         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  clientId     String?
+  client       Client?          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  supplierId   String?
+  supplier     Supplier?        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  purchaseId   String?
+  purchase     Purchase?        @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  saleId       String?
+  sale         Sale?            @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  paymentId       String?
+  payment         Payment?         @relation("PaymentDocuments", fields: [paymentId], references: [id], onDelete: SetNull)
+  invoiceImportId String?
+  invoiceImport   InvoiceImport?   @relation(fields: [invoiceImportId], references: [id], onDelete: SetNull)
+  ocrJsonUrl      String?
+  extractedData   Json?
+  uploadedById    String?
+  uploadedBy      User?            @relation("UploadedBy", fields: [uploadedById], references: [id])
+  createdAt       DateTime         @default(now())
+}
+
+// ——— Identification entreprise (singleton) ———
+
+model DocumentTemplate {
+  id           String                @id @default(cuid())
+  type         GeneratedDocumentType
+  name         String
+  version      String                @default("1.0")
+  layoutConfig Json?
+  isDefault    Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([type, version])
+}
+
+model GeneratedDocument {
+  id               String                  @id @default(cuid())
+  type             GeneratedDocumentType
+  reference        String
+  saleId           String?
+  vehicleId        String?
+  clientId         String?
+  depotId          String?
+  exitVoucherId    String?                 @unique
+  deliveryNoteId   String?                 @unique
+  pdfUrl           String?
+  status           GeneratedDocumentStatus @default(GENERATED)
+  generatedById    String?
+  generatedBy      User?                   @relation("GeneratedDocuments", fields: [generatedById], references: [id], onDelete: SetNull)
+  generatedAt      DateTime                @default(now())
+  sentAt           DateTime?
+  downloadedAt     DateTime?
+  printedAt        DateTime?
+  signedUploadedAt DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  history          DocumentHistory[]
+
+  @@index([type, saleId])
+  @@index([reference])
+}
+
+model DocumentHistory {
+  id         String            @id @default(cuid())
+  documentId String
+  document   GeneratedDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  action     String
+  userId     String?
+  user       User?             @relation("DocumentHistoryActor", fields: [userId], references: [id], onDelete: SetNull)
+  metadata   Json?
+  createdAt  DateTime          @default(now())
+
+  @@index([documentId, createdAt])
+}
+
+model CompanyProfile {
+  id             String   @id @default("default")
+  legalName      String   @default("")
+  tradeName      String?
+  legalForm      String?
+  ice            String?
+  rc             String?
+  taxId          String?
+  patent         String?
+  cnss           String?
+  capital        String?
+  address        String?  @db.Text
+  city           String?
+  postalCode     String?
+  country        String?  @default("Maroc")
+  phone          String?
+  fax            String?
+  email          String?
+  website        String?
+  bankName       String?
+  bankAccount    String?
+  logoUrl        String?
+  headerImageUrl String?
+  footerImageUrl String?
+  headerText     String?  @db.Text
+  footerText     String?  @db.Text
+  documentNotes           String?  @db.Text
+  signedDeliveryRequired  Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+// ——— Dépenses internes (hors frais d’achat) ———
+
+model Expense {
+  id        String   @id @default(cuid())
+  label     String
+  amount    Decimal  @db.Decimal(14, 2)
+  date      DateTime @default(now())
+  category  String?
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+}
+
+// ——— Mouvements de stock / transferts ———
+
+model StockMovement {
+  id            String              @id @default(cuid())
+  vehicleId     String
+  vehicle       Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  movementType  StockMovementType   @default(INITIAL)
+  status        StockMovementStatus @default(COMPLETED)
+  fromDepotId   String?
+  fromDepot     Depot?              @relation("FromDepot", fields: [fromDepotId], references: [id])
+  toDepotId     String?
+  toDepot       Depot?              @relation("ToDepot", fields: [toDepotId], references: [id])
+  purchaseId    String?
+  purchase      Purchase?           @relation("PurchaseMovements", fields: [purchaseId], references: [id], onDelete: SetNull)
+  saleId        String?
+  sale          Sale?               @relation("SaleMovements", fields: [saleId], references: [id], onDelete: SetNull)
+  reason        String?
+  movementDate  DateTime            @default(now())
+  createdAt     DateTime            @default(now())
+  completedAt   DateTime?
+  userId        String?
+  user          User?               @relation(fields: [userId], references: [id])
+  completedById String?
+}
