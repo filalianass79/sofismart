@@ -70,9 +70,26 @@ ENABLE_MOCK_NOTIFICATIONS=true
 
 1. Créer un projet Vercel lié au dépôt GitHub
 2. Environnement **Preview** ou projet dédié `sofismart-staging`
-3. Importer les variables depuis `.env.staging.example`
+3. **Variables obligatoires** (Settings → Environment Variables → cocher **Production** et **Preview**) :
+
+| Variable | Exemple |
+|----------|---------|
+| `DATABASE_URL` | Connection string Neon (`?sslmode=require`) |
+| `AUTH_SECRET` | `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `https://votre-app.vercel.app` |
+| `APP_URL` | même URL que `NEXTAUTH_URL` |
+| `NEXT_PUBLIC_APP_ENV` | `staging` |
+| `NEXT_PUBLIC_APP_NAME` | `SOFISMART TEST` |
+| `APP_ENV` | `staging` |
+| `EMAIL_ENABLED` | `true` |
+| `EMAIL_TEST_MODE` | `true` |
+| `WHATSAPP_ENABLED` | `false` |
+
 4. Région recommandée : `cdg1` (Paris) — configurée dans `vercel.json`
 5. Build : `prisma generate && next build` (automatique)
+6. Après le premier déploiement : exécuter `prisma migrate deploy` et `seed:staging` contre la base Neon (localement avec `.env.staging` ou via script CI)
+
+Importer les variables depuis `.env.staging.example`
 
 **Limitation Vercel :** le stockage local (`public/uploads`) est **éphémère**. Les fichiers uploadés peuvent disparaître au redeploiement. Pour staging long terme, prévoir S3 (`UPLOAD_STORAGE=s3`).
 

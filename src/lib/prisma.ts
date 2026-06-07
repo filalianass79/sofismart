@@ -13,17 +13,19 @@ const globalForPrisma = globalThis as unknown as {
   prismaCacheKey?: string;
 };
 
-function createPrisma() {
+function createPrisma(): PrismaClient {
   const url = process.env.DATABASE_URL;
   if (!url) {
-    throw new Error("DATABASE_URL manquant");
+    throw new Error(
+      "DATABASE_URL manquant — configurez la variable dans Vercel (Settings → Environment Variables).",
+    );
   }
   const pool = new Pool({ connectionString: url });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 
-function getPrisma(): PrismaClient {
+function getPrismaClient(): PrismaClient {
   if (globalForPrisma.prisma && globalForPrisma.prismaCacheKey === PRISMA_CACHE_KEY) {
     return globalForPrisma.prisma;
   }
@@ -33,4 +35,14 @@ function getPrisma(): PrismaClient {
   return client;
 }
 
-export const prisma = getPrisma();
+/**
+ * Client Prisma initialisé à la demande (lazy).
+ * Permet au build Vercel de réussir sans connexion DB ; DATABASE_URL reste requis au runtime.
+ */
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});
