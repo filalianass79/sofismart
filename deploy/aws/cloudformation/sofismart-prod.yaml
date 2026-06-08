@@ -1,0 +1,359 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: SOFISMART production — RDS PostgreSQL, S3, ECR, ECS Fargate, ALB
+
+Parameters:
+  DBPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 12
+    Description: Mot de passe master RDS (12+ caracteres)
+  AppUrl:
+    Type: String
+    Default: https://app.sofismart.ma
+    Description: URL publique HTTPS de l application
+  AuthSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: AUTH_SECRET (openssl rand -base64 32)
+  SeedAdminPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 12
+    Description: Mot de passe administrateur initial
+  SeedAdminEmail:
+    Type: String
+    Default: admin@sofismart.ma
+  S3PublicBaseUrl:
+    Type: String
+    Default: https://sofismart-prod-uploads.s3.eu-west-3.amazonaws.com
+    Description: URL publique fichiers (CloudFront ou S3)
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC (default VPC acceptable pour demarrage)
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Au moins 2 subnets publics pour ALB et ECS
+  DesiredCount:
+    Type: Number
+    Default: 0
+    Description: Nombre de taches ECS (0 au premier deploiement, 1 apres docker push)
+
+Resources:
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "sofismart-prod-uploads-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: sofismart
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"keep last 10","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},"action":{"type":"expire"}}]}
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/sofismart-prod
+      RetentionInDays: 30
+
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SOFISMART ECS tasks
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SOFISMART ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SOFISMART RDS PostgreSQL
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref ECSSecurityGroup
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: SOFISMART RDS subnets
+      SubnetIds: !Ref PublicSubnetIds
+
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: sofismart-prod
+      Engine: postgres
+      EngineVersion: "16.6"
+      DBInstanceClass: db.t4g.micro
+      AllocatedStorage: 20
+      StorageType: gp3
+      StorageEncrypted: true
+      MasterUsername: sofismart
+      MasterUserPassword: !Ref DBPassword
+      DBName: sofismart
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+      BackupRetentionPeriod: 7
+      MultiAZ: false
+      DeletionProtection: false
+
+  AppSecret:
+    Type: AWS::SecretsManager::Secret
+    DependsOn: DBInstance
+    Properties:
+      Name: sofismart/prod
+      Description: SOFISMART production secrets
+      SecretString: !Sub |
+        {
+          "DATABASE_URL": "postgresql://sofismart:${DBPassword}@${DBInstance.Endpoint.Address}:5432/sofismart?schema=public&sslmode=require",
+          "AUTH_SECRET": "${AuthSecret}",
+          "APP_URL": "${AppUrl}",
+          "NEXTAUTH_URL": "${AppUrl}",
+          "AWS_S3_PUBLIC_BASE_URL": "${S3PublicBaseUrl}",
+          "SEED_ADMIN_PASSWORD": "${SeedAdminPassword}",
+          "SEED_ADMIN_EMAIL": "${SeedAdminEmail}",
+          "SMTP_HOST": "",
+          "SMTP_USER": "",
+          "SMTP_PASS": ""
+        }
+
+  ECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sofismart-ecs-execution-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ReadSecrets
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref AppSecret
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sofismart-ecs-task-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3Uploads
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt UploadsBucket.Arn
+                  - !Sub "${UploadsBucket.Arn}/*"
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: sofismart-prod
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: sofismart-alb
+      Scheme: internet-facing
+      Type: application
+      Subnets: !Ref PublicSubnetIds
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: sofismart-tg
+      Port: 3000
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: ip
+      HealthCheckPath: /api/health
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ALB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: sofismart-prod
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: "2048"
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: sofismart-app
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sofismart:latest"
+          Essential: true
+          PortMappings:
+            - ContainerPort: 3000
+              Protocol: tcp
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: APP_ENV
+              Value: production
+            - Name: UPLOAD_STORAGE
+              Value: s3
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+            - Name: AWS_S3_REGION
+              Value: !Ref AWS::Region
+            - Name: AWS_S3_BUCKET
+              Value: !Ref UploadsBucket
+            - Name: AWS_S3_PREFIX
+              Value: uploads
+            - Name: RUN_MIGRATIONS_ON_START
+              Value: "true"
+            - Name: RUN_SEED_ON_START
+              Value: "true"
+            - Name: SEED_MODE
+              Value: production
+            - Name: SEED_ADMIN_EMAIL
+              Value: !Ref SeedAdminEmail
+            - Name: EMAIL_ENABLED
+              Value: "true"
+            - Name: EMAIL_TEST_MODE
+              Value: "false"
+            - Name: ENABLE_DEBUG_MODE
+              Value: "false"
+          Secrets:
+            - Name: DATABASE_URL
+              ValueFrom: !Sub "${AppSecret}:DATABASE_URL::"
+            - Name: AUTH_SECRET
+              ValueFrom: !Sub "${AppSecret}:AUTH_SECRET::"
+            - Name: APP_URL
+              ValueFrom: !Sub "${AppSecret}:APP_URL::"
+            - Name: NEXTAUTH_URL
+              ValueFrom: !Sub "${AppSecret}:NEXTAUTH_URL::"
+            - Name: AWS_S3_PUBLIC_BASE_URL
+              ValueFrom: !Sub "${AppSecret}:AWS_S3_PUBLIC_BASE_URL::"
+            - Name: SEED_ADMIN_PASSWORD
+              ValueFrom: !Sub "${AppSecret}:SEED_ADMIN_PASSWORD::"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: app
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - wget -qO- http://127.0.0.1:3000/api/health || exit 1
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 120
+
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListener
+    Properties:
+      ServiceName: sofismart-app
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: !Ref DesiredCount
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PublicSubnetIds
+          SecurityGroups:
+            - !Ref ECSSecurityGroup
+      LoadBalancers:
+        - ContainerName: sofismart-app
+          ContainerPort: 3000
+          TargetGroupArn: !Ref TargetGroup
+      HealthCheckGracePeriodSeconds: 180
+
+Outputs:
+  LoadBalancerDNS:
+    Description: URL ALB (HTTP) — pointer le domaine ou tester ici
+    Value: !GetAtt ALB.DNSName
+  RDSEndpoint:
+    Description: Endpoint RDS PostgreSQL
+    Value: !GetAtt DBInstance.Endpoint.Address
+  S3BucketName:
+    Description: Bucket uploads
+    Value: !Ref UploadsBucket
+  ECRRepositoryUri:
+    Description: URI ECR pour docker push
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/sofismart"
+  ECSClusterName:
+    Value: !Ref ECSCluster
+  SecretArn:
+    Value: !Ref AppSecret

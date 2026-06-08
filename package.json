@@ -26,6 +26,9 @@
     "demo:documents": "node scripts/generate-demo-documents.mjs",
     "test:deployment": "npm run lint && npm run type-check && npm run build",
     "docker:prod": "docker compose -f docker-compose.prod.yml up -d --build",
+    "aws:setup": "powershell -ExecutionPolicy Bypass -File deploy/aws/setup-aws.ps1 -Phase all",
+    "aws:setup:infra": "powershell -ExecutionPolicy Bypass -File deploy/aws/setup-aws.ps1 -Phase infra",
+    "aws:setup:app": "powershell -ExecutionPolicy Bypass -File deploy/aws/setup-aws.ps1 -Phase app",
     "aws:ecr-push": "bash deploy/aws/push-ecr.sh",
     "postinstall": "prisma generate"
   },
