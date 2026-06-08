@@ -6,9 +6,8 @@ import {
   isEmailTestMode,
 } from "../email.provider";
 import type { EmailSendResult, SendEmailParams } from "../types";
-import { resolveAttachmentPath } from "../email-utils";
+import { resolveAttachmentPath, readAttachmentBuffer } from "../email-utils";
 import nodemailer from "nodemailer";
-import fs from "node:fs/promises";
 
 export class SmtpEmailProvider implements EmailProvider {
   readonly name = "smtp";
@@ -56,11 +55,16 @@ export class SmtpEmailProvider implements EmailProvider {
         const localPath = resolveAttachmentPath(a.fileUrl);
         if (localPath) {
           try {
-            const content = await fs.readFile(localPath);
+            const { readFile } = await import("node:fs/promises");
+            const content = await readFile(localPath);
             return { filename: a.fileName, content };
           } catch {
             return { filename: a.fileName, path: localPath };
           }
+        }
+        const s3Content = await readAttachmentBuffer(a.fileUrl);
+        if (s3Content) {
+          return { filename: a.fileName, content: s3Content };
         }
         if (a.fileUrl.startsWith("http")) {
           return { filename: a.fileName, href: a.fileUrl };

@@ -13,4 +13,5 @@ export function getStorageProvider(): StorageProvider {
 
 export type { StorageProvider, StoredFile } from "./types";
 export { LocalStorageProvider } from "./local-storage-provider";
-export { S3StorageProvider } from "./s3-storage-provider";
+export { S3StorageProvider, readFromS3 } from "./s3-storage-provider";
+export { readUploadFile, resolveLocalUploadPath, uploadsRoot } from "./file-resolver";

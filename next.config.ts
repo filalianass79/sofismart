@@ -11,12 +11,12 @@ const securityHeaders = [
   },
 ];
 
+const s3PublicBase = process.env.AWS_S3_PUBLIC_BASE_URL?.replace(/\/$/, "");
+
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
-  /** Évite le bundling Webpack de workers (tesseract, pdfjs) — chemins __dirname cassés sinon */
-  serverExternalPackages: ["tesseract.js", "pdf-parse", "pdfjs-dist"],
-  /** Inclut les binaires/workers OCR dans le trace standalone (Docker) */
+  serverExternalPackages: ["tesseract.js", "pdf-parse", "pdfjs-dist", "@aws-sdk/client-s3"],
   outputFileTracingIncludes: {
     "/api/purchases/invoice-import": [
       "./node_modules/tesseract.js/**/*",
@@ -38,8 +38,27 @@ const nextConfig: NextConfig = {
     ],
   },
   images: {
-    remotePatterns: [],
+    remotePatterns: s3PublicBase
+      ? [
+          {
+            protocol: "https",
+            hostname: new URL(s3PublicBase).hostname,
+            pathname: "/**",
+          },
+        ]
+      : [],
     unoptimized: process.env.NODE_ENV !== "production",
+  },
+  async rewrites() {
+    if (process.env.UPLOAD_STORAGE === "s3" && s3PublicBase) {
+      return [
+        {
+          source: "/uploads/:path*",
+          destination: `${s3PublicBase}/uploads/:path*`,
+        },
+      ];
+    }
+    return [];
   },
   async headers() {
     return [

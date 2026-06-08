@@ -1,0 +1,60 @@
+{
+  "family": "sofismart-prod",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/sofismart-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/sofismart-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "sofismart-app",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/sofismart:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "APP_ENV", "value": "production" },
+        { "name": "UPLOAD_STORAGE", "value": "s3" },
+        { "name": "AWS_REGION", "value": "eu-west-3" },
+        { "name": "AWS_S3_REGION", "value": "eu-west-3" },
+        { "name": "AWS_S3_BUCKET", "value": "sofismart-prod-uploads" },
+        { "name": "AWS_S3_PREFIX", "value": "uploads" },
+        { "name": "RUN_MIGRATIONS_ON_START", "value": "false" },
+        { "name": "ENABLE_DEBUG_MODE", "value": "false" },
+        { "name": "EMAIL_ENABLED", "value": "true" },
+        { "name": "EMAIL_TEST_MODE", "value": "false" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:sofismart/prod/DATABASE_URL" },
+        { "name": "AUTH_SECRET", "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:sofismart/prod/AUTH_SECRET" },
+        { "name": "APP_URL", "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:sofismart/prod/APP_URL" },
+        { "name": "NEXTAUTH_URL", "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:sofismart/prod/NEXTAUTH_URL" },
+        { "name": "AWS_S3_PUBLIC_BASE_URL", "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:sofismart/prod/AWS_S3_PUBLIC_BASE_URL" },
+        { "name": "SMTP_HOST", "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:sofismart/prod/SMTP_HOST" },
+        { "name": "SMTP_USER", "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:sofismart/prod/SMTP_USER" },
+        { "name": "SMTP_PASS", "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:sofismart/prod/SMTP_PASS" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/sofismart-prod",
+          "awslogs-region": "eu-west-3",
+          "awslogs-stream-prefix": "app"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 90
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { readUploadFile } from "@/lib/storage/file-resolver";
 import type { jsPDF } from "jspdf";
 import { getCompanyProfile } from "@/lib/services/company-profile-service";
 
@@ -7,12 +7,11 @@ type ImageAsset = { dataUrl: string; format: "PNG" | "JPEG" | "WEBP" };
 
 async function loadPublicImage(publicPath: string | null | undefined): Promise<ImageAsset | null> {
   if (!publicPath?.startsWith("/uploads/")) return null;
-  const abs = path.join(process.cwd(), "public", publicPath.replace(/^\//, ""));
-  const ext = path.extname(abs).toLowerCase();
-  // jsPDF ne gère que PNG/JPEG — ignorer webp, gif, svg pour éviter un crash PDF.
-  if (ext === ".webp" || ext === ".gif" || ext === ".svg") return null;
   try {
-    const buf = await readFile(abs);
+    const buf = await readUploadFile(publicPath);
+    if (!buf) return null;
+    const ext = path.extname(publicPath).toLowerCase();
+    if (ext === ".webp" || ext === ".gif" || ext === ".svg") return null;
     const format: ImageAsset["format"] = ext === ".png" ? "PNG" : "JPEG";
     const mime = format === "PNG" ? "image/png" : "image/jpeg";
     return {

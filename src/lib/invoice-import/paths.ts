@@ -1,10 +1,5 @@
 import path from "node:path";
-
-/** Racine des uploads (UPLOAD_DIR, relatif à process.cwd() par défaut). */
-export function uploadsRoot(): string {
-  const dir = process.env.UPLOAD_DIR ?? "public/uploads";
-  return path.isAbsolute(dir) ? dir : path.join(process.cwd(), dir);
-}
+import { uploadsRoot } from "@/lib/storage/file-resolver";
 
 export function invoiceImportDir(): string {
   return path.join(uploadsRoot(), "invoice-imports");

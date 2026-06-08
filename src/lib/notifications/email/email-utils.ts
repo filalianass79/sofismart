@@ -1,5 +1,4 @@
-import path from "node:path";
-import { uploadsRoot } from "@/lib/invoice-import/paths";
+import { readUploadFile, resolveAttachmentPath as resolveUploadPath, uploadsRoot } from "@/lib/storage/file-resolver";
 
 export function maskEmail(email: string): string {
   const [local, domain] = email.split("@");
@@ -19,11 +18,24 @@ export function normalizeEmailList(raw: string[] | undefined): string[] {
 
 /** Résout une URL relative (/uploads/...) vers un chemin disque pour pièces jointes. */
 export function resolveAttachmentPath(fileUrl: string): string | null {
-  if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) return null;
-  let relative = fileUrl.replace(/\\/g, "/");
-  if (relative.startsWith("/uploads/")) relative = relative.slice("/uploads/".length);
-  else if (relative.startsWith("uploads/")) relative = relative.slice("uploads/".length);
-  else if (relative.startsWith("public/uploads/")) relative = relative.slice("public/uploads/".length);
-  else if (path.isAbsolute(relative)) return relative;
-  return path.join(uploadsRoot(), relative);
+  return resolveUploadPath(fileUrl);
 }
+
+/** Lit une pièce jointe (local ou S3). */
+export async function readAttachmentBuffer(fileUrl: string): Promise<Buffer | null> {
+  const local = resolveUploadPath(fileUrl);
+  if (local) {
+    try {
+      const { readFile } = await import("node:fs/promises");
+      return await readFile(local);
+    } catch {
+      return null;
+    }
+  }
+  if (fileUrl.startsWith("/uploads/")) {
+    return readUploadFile(fileUrl);
+  }
+  return null;
+}
+
+export { uploadsRoot };
