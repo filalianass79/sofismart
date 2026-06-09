@@ -1,0 +1,18 @@
+# Développement local — PostgreSQL uniquement (port hôte 5433)
+# Usage : docker compose -f docker-compose.dev.yml up -d
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sofismart
+    ports:
+      - "5433:5432"
+    volumes:
+      - sofismart_pg_dev:/var/lib/postgresql/data
+
+volumes:
+  sofismart_pg_dev:

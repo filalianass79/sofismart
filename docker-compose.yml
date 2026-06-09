@@ -1,16 +1,62 @@
-# Port 5433 on the host avoids clashing with a local PostgreSQL install on 5432 (common on Windows).
+# SOFISMART — Production AWS Lightsail (Docker)
+# Usage sur le serveur :
+#   cp .env.production.example .env.production
+#   docker compose --env-file .env.production up -d --build
+
 services:
   db:
     image: postgres:16-alpine
-    restart: unless-stopped
+    container_name: sofismart-db
+    restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: sofismart
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-sofismart_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}
+      POSTGRES_DB: ${POSTGRES_DB:-sofismart}
     volumes:
-      - sofismart_pg:/var/lib/postgresql/data
+      - sofismart_pg_data:/var/lib/postgresql/data
+    networks:
+      - sofismart_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sofismart_user} -d ${POSTGRES_DB:-sofismart}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sofismart-app
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sofismart_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-sofismart}?schema=public
+      UPLOAD_DIR: ${UPLOAD_DIR:-public/uploads}
+      PDF_STORAGE_PATH: ${PDF_STORAGE_PATH:-public/uploads/pdfs}
+    ports:
+      # Exposé uniquement en local — Nginx sur l'hôte fait le reverse proxy
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - sofismart_uploads:/app/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sofismart_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+networks:
+  sofismart_internal:
+    driver: bridge
 
 volumes:
-  sofismart_pg:
+  sofismart_pg_data:
+  sofismart_uploads:

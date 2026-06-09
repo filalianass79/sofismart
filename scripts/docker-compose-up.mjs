@@ -132,7 +132,7 @@ if (!ready) {
   process.exit(1);
 }
 
-const res = spawnSync(docker, ["compose", "up", "-d"], {
+const res = spawnSync(docker, ["compose", "-f", "docker-compose.dev.yml", "up", "-d"], {
   cwd: projectRoot,
   stdio: "inherit",
   shell: false,

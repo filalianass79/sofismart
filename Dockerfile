@@ -43,7 +43,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bmp-js ./node_module
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/wasm-feature-detect ./node_modules/wasm-feature-detect
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/zlibjs ./node_modules/zlibjs
 
-RUN mkdir -p public/uploads/invoice-imports && chown -R nextjs:nodejs public/uploads
+RUN mkdir -p public/uploads/{documents,pdfs,images,invoice-imports,catalog,delivery-signed,delivery-notes,proformas,company/logo,company/header,company/footer} \
+  && chown -R nextjs:nodejs public/uploads
 
 COPY --chown=nextjs:nodejs scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
