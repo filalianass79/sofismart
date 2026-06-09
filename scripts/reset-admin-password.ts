@@ -3,7 +3,7 @@
  *
  * Usage :
  *   npm run admin:reset
- *   SEED_ADMIN_EMAIL=admin@sofismart.ma SEED_ADMIN_PASSWORD=VotreMotDePasse12! npm run admin:reset
+ *   SEED_ADMIN_EMAIL=admin@sofismart.com SEED_ADMIN_PASSWORD=VotreMotDePasse12! npm run admin:reset
  */
 import dotenv from "dotenv";
 dotenv.config({ override: true });
@@ -13,14 +13,20 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
-const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@sofismart.ma").toLowerCase().trim();
+const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@sofismart.com")
+  .toLowerCase()
+  .trim();
 const password = process.env.SEED_ADMIN_PASSWORD ?? "AdminSofi2026!";
 const displayName = process.env.SEED_ADMIN_NAME ?? "Administrateur SOFISMART";
 
 async function main() {
   if (password.length < 12) {
-    console.error("Erreur : le mot de passe doit contenir au moins 12 caractères.");
-    console.error("Exemple : SEED_ADMIN_PASSWORD=MonNouveauPass2026! npm run admin:reset");
+    console.error(
+      "Erreur : le mot de passe doit contenir au moins 12 caractères.",
+    );
+    console.error(
+      "Exemple : SEED_ADMIN_PASSWORD=MonNouveauPass2026! npm run admin:reset",
+    );
     process.exit(1);
   }
 
@@ -38,7 +44,9 @@ async function main() {
       console.log("Rôle ADMIN absent — exécution du seed RBAC…");
       const { seedRbac } = await import("../prisma/seed-rbac");
       await seedRbac(prisma);
-      adminRole = await prisma.role.findUniqueOrThrow({ where: { code: "ADMIN" } });
+      adminRole = await prisma.role.findUniqueOrThrow({
+        where: { code: "ADMIN" },
+      });
     }
 
     const hash = await bcrypt.hash(password, 12);
@@ -69,7 +77,9 @@ async function main() {
 
     let employee =
       (await prisma.employee.findFirst({
-        where: { OR: [{ professionalEmail: email }, { reference: "SAL-2026-0001" }] },
+        where: {
+          OR: [{ professionalEmail: email }, { reference: "SAL-2026-0001" }],
+        },
       })) ??
       (await prisma.employee.create({
         data: {

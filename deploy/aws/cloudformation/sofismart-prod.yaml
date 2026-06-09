@@ -9,7 +9,7 @@ Parameters:
     Description: Mot de passe master RDS (12+ caracteres)
   AppUrl:
     Type: String
-    Default: https://app.sofismart.ma
+    Default: https://app.sofismart.com
     Description: URL publique HTTPS de l application
   AuthSecret:
     Type: String
@@ -23,7 +23,7 @@ Parameters:
     Description: Mot de passe administrateur initial
   SeedAdminEmail:
     Type: String
-    Default: admin@sofismart.ma
+    Default: admin@sofismart.com
   S3PublicBaseUrl:
     Type: String
     Default: https://sofismart-prod-uploads.s3.eu-west-3.amazonaws.com

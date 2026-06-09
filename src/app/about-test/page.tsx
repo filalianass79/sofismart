@@ -5,11 +5,31 @@ import Link from "next/link";
 import { StagingBadge } from "@/components/staging/staging-chrome";
 
 const DEMO_ACCOUNTS = [
-  { role: "Administrateur", email: "admin@test.sofismart.ma", password: "Admin123*" },
-  { role: "Commercial", email: "commercial@test.sofismart.ma", password: "Test123*" },
-  { role: "Magasinier", email: "magasinier@test.sofismart.ma", password: "Test123*" },
-  { role: "Comptable", email: "comptable@test.sofismart.ma", password: "Test123*" },
-  { role: "Directeur", email: "directeur@test.sofismart.ma", password: "Test123*" },
+  {
+    role: "Administrateur",
+    email: "admin@test.sofismart.com",
+    password: "Admin123*",
+  },
+  {
+    role: "Commercial",
+    email: "commercial@test.sofismart.com",
+    password: "Test123*",
+  },
+  {
+    role: "Magasinier",
+    email: "magasinier@test.sofismart.com",
+    password: "Test123*",
+  },
+  {
+    role: "Comptable",
+    email: "comptable@test.sofismart.com",
+    password: "Test123*",
+  },
+  {
+    role: "Directeur",
+    email: "directeur@test.sofismart.com",
+    password: "Test123*",
+  },
 ];
 
 export default function AboutTestPage() {
@@ -35,7 +55,9 @@ export default function AboutTestPage() {
     <div className="mx-auto max-w-4xl space-y-8 p-8">
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-3xl text-navy-950">SOFISMART TEST</h1>
+          <h1 className="font-display text-3xl text-navy-950">
+            SOFISMART TEST
+          </h1>
           <StagingBadge />
         </div>
         <p className="text-sm text-orange-800">
@@ -46,13 +68,16 @@ export default function AboutTestPage() {
       <section className="rounded-xl border border-orange-200 bg-orange-50 p-6">
         <h2 className="font-semibold text-orange-950">Environnement</h2>
         <p className="mt-2 text-sm text-orange-900">
-          Cette instance est dédiée aux tests utilisateurs, démonstrations clients et validation
-          fonctionnelle avant la mise en production. Ne jamais y saisir de données réelles clients.
+          Cette instance est dédiée aux tests utilisateurs, démonstrations
+          clients et validation fonctionnelle avant la mise en production. Ne
+          jamais y saisir de données réelles clients.
         </p>
       </section>
 
       <section className="rounded-xl border bg-white p-6 shadow-sm">
-        <h2 className="mb-4 font-semibold text-navy-950">Comptes de démonstration</h2>
+        <h2 className="mb-4 font-semibold text-navy-950">
+          Comptes de démonstration
+        </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -74,13 +99,18 @@ export default function AboutTestPage() {
           </table>
         </div>
         <p className="mt-4 text-xs text-navy-500">
-          Après <code className="rounded bg-navy-950/5 px-1">npm run seed:staging</code>
+          Après{" "}
+          <code className="rounded bg-navy-950/5 px-1">
+            npm run seed:staging
+          </code>
         </p>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h2 className="font-semibold text-navy-950">Fonctionnalités disponibles</h2>
+          <h2 className="font-semibold text-navy-950">
+            Fonctionnalités disponibles
+          </h2>
           <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-navy-700">
             <li>Véhicules, achats, ventes, proformas</li>
             <li>Clients, fournisseurs, paiements</li>
@@ -91,7 +121,9 @@ export default function AboutTestPage() {
           </ul>
         </div>
         <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h2 className="font-semibold text-navy-950">Fonctionnalités limitées</h2>
+          <h2 className="font-semibold text-navy-950">
+            Fonctionnalités limitées
+          </h2>
           <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-navy-700">
             <li>WhatsApp réel (simulation uniquement)</li>
             <li>Uploads persistants sur Vercel (éphémère)</li>
@@ -104,7 +136,8 @@ export default function AboutTestPage() {
       <section className="rounded-xl border bg-white p-6 shadow-sm">
         <h2 className="font-semibold text-navy-950">Documents & PDF TEST</h2>
         <p className="mt-2 text-sm text-navy-600">
-          Génère des PDF de démonstration (bon de sortie, livraison, facture vente, proforma).
+          Génère des PDF de démonstration (bon de sortie, livraison, facture
+          vente, proforma).
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button

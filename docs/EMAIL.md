@@ -21,8 +21,8 @@ SMTP_SECURE=false
 SMTP_USER=votre-utilisateur
 SMTP_PASS=votre-mot-de-passe
 SMTP_FROM_NAME=SOFISMART
-SMTP_FROM_EMAIL=contact@sofismart.ma
-SMTP_REPLY_TO=contact@sofismart.ma
+SMTP_FROM_EMAIL=contact@sofismart.com
+SMTP_REPLY_TO=contact@sofismart.com
 ```
 
 Testez la connexion depuis **Paramètres → Email** ou via `POST /api/emails/provider/test-connection`.
@@ -52,12 +52,12 @@ Les événements métier passent par `dispatchNotificationEvent` qui déclenche 
 
 ## Paramétrage UI
 
-| Page | Description |
-|------|-------------|
+| Page                                      | Description                |
+| ----------------------------------------- | -------------------------- |
 | `/dashboard/settings/email-notifications` | Provider, test, événements |
-| `/dashboard/settings/email-templates` | Templates HTML |
-| `/dashboard/emails/logs` | Historique et retry |
-| `/dashboard/profile` | Préférences utilisateur |
+| `/dashboard/settings/email-templates`     | Templates HTML             |
+| `/dashboard/emails/logs`                  | Historique et retry        |
+| `/dashboard/profile`                      | Préférences utilisateur    |
 
 ## Seed
 

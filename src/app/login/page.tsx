@@ -26,19 +26,29 @@ export default async function LoginPage() {
         <div className="mb-8 text-center">
           <h1 className="font-display text-4xl text-navy-950">
             <span>Sofi</span>
-            <span className="bg-gradient-to-r from-gold-500 to-gold-300 bg-clip-text text-transparent">Smart</span>
+            <span className="bg-gradient-to-r from-gold-500 to-gold-300 bg-clip-text text-transparent">
+              Smart
+            </span>
           </h1>
-          <p className="mt-2 text-sm text-navy-600">Connexion sécurisée à votre espace de gestion</p>
+          <p className="mt-2 text-sm text-navy-600">
+            Connexion sécurisée à votre espace de gestion
+          </p>
         </div>
-        <Suspense fallback={<div className="h-40 animate-pulse rounded-lg bg-navy-950/5" />}>
+        <Suspense
+          fallback={
+            <div className="h-40 animate-pulse rounded-lg bg-navy-950/5" />
+          }
+        >
           <LoginForm />
         </Suspense>
         <p className="mt-6 text-center text-xs text-navy-500">
           {process.env.NEXT_PUBLIC_APP_ENV === "staging" ? (
             <>
               Staging :{" "}
-              <span className="font-mono text-navy-800">admin@test.sofismart.ma</span> /{" "}
-              <span className="font-mono">Admin123*</span>
+              <span className="font-mono text-navy-800">
+                admin@test.sofismart.com
+              </span>{" "}
+              / <span className="font-mono">Admin123*</span>
               {" · "}
               <a href="/about-test" className="text-gold-800 underline">
                 Infos test
@@ -46,8 +56,11 @@ export default async function LoginPage() {
             </>
           ) : (
             <>
-              Compte démo : <span className="font-mono text-navy-800">admin@sofismart.ma</span> /{" "}
-              <span className="font-mono">SofiSmart2026!</span>
+              Compte démo :{" "}
+              <span className="font-mono text-navy-800">
+                admin@sofismart.com
+              </span>{" "}
+              / <span className="font-mono">SofiSmart2026!</span>
             </>
           )}
         </p>

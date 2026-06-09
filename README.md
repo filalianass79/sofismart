@@ -4,15 +4,15 @@ Application web **Next.js 15 (App Router)**, **PostgreSQL**, **Prisma 7**, **Nex
 
 ## Architecture
 
-| Couche | Rôle |
-|--------|------|
-| `src/app/(pages)` | UI : dashboard, modules métier, login |
-| `src/app/api/*` | API REST CRUD + rapports + upload |
-| `src/auth.ts` | NextAuth (Credentials, session JWT, rôle dans le token) |
-| `src/middleware.ts` | Protection routes (JWT via `getToken`, compatible Edge — **sans** Prisma) |
-| `src/lib/prisma.ts` | Client Prisma + adaptateur `@prisma/adapter-pg` |
-| `src/lib/permissions.ts` | Matrice rôles → permissions |
-| `prisma/schema.prisma` | Modèle relationnel (User, Vehicle, Purchase, Sale, Depot, Payment, etc.) |
+| Couche                   | Rôle                                                                      |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `src/app/(pages)`        | UI : dashboard, modules métier, login                                     |
+| `src/app/api/*`          | API REST CRUD + rapports + upload                                         |
+| `src/auth.ts`            | NextAuth (Credentials, session JWT, rôle dans le token)                   |
+| `src/middleware.ts`      | Protection routes (JWT via `getToken`, compatible Edge — **sans** Prisma) |
+| `src/lib/prisma.ts`      | Client Prisma + adaptateur `@prisma/adapter-pg`                           |
+| `src/lib/permissions.ts` | Matrice rôles → permissions                                               |
+| `prisma/schema.prisma`   | Modèle relationnel (User, Vehicle, Purchase, Sale, Depot, Payment, etc.)  |
 
 **Rôles** : `ADMIN`, `COMMERCIAL`, `DEPOT_MANAGER`, `ACCOUNTANT` — permissions par module (voir `src/lib/permissions.ts`).
 
@@ -40,10 +40,10 @@ Ouvrir [http://localhost:3001](http://localhost:3001) — redirection vers `/log
 
 ### Comptes démo (après seed)
 
-| Email | Mot de passe | Rôle |
-|-------|----------------|------|
-| `admin@sofismart.ma` | `SofiSmart2026!` | Administrateur |
-| `commercial@sofismart.ma` | `SofiSmart2026!` | Commercial |
+| Email                      | Mot de passe     | Rôle           |
+| -------------------------- | ---------------- | -------------- |
+| `admin@sofismart.com`      | `SofiSmart2026!` | Administrateur |
+| `commercial@sofismart.com` | `SofiSmart2026!` | Commercial     |
 
 ### Dépannage (Prisma / login : « Authentication failed… »)
 
@@ -53,16 +53,16 @@ Ouvrir [http://localhost:3001](http://localhost:3001) — redirection vers `/log
 
 ## Scripts utiles
 
-| Commande | Description |
-|----------|-------------|
-| `npm run dev` | Serveur de développement |
-| `npm run build` / `npm start` | Production |
-| `npm run type-check` | Vérification TypeScript |
-| `npm run lint` | ESLint |
-| `npm run prisma:migrate:deploy` | Migrations en production |
-| `npm run db:migrate` | Migrations Prisma (dev) |
-| `npm run db:seed` | Données de démonstration (`SEED_MODE=demo`) |
-| `npm run db:generate` | Régénère le client Prisma |
+| Commande                        | Description                                 |
+| ------------------------------- | ------------------------------------------- |
+| `npm run dev`                   | Serveur de développement                    |
+| `npm run build` / `npm start`   | Production                                  |
+| `npm run type-check`            | Vérification TypeScript                     |
+| `npm run lint`                  | ESLint                                      |
+| `npm run prisma:migrate:deploy` | Migrations en production                    |
+| `npm run db:migrate`            | Migrations Prisma (dev)                     |
+| `npm run db:seed`               | Données de démonstration (`SEED_MODE=demo`) |
+| `npm run db:generate`           | Régénère le client Prisma                   |
 
 **Déploiement :** voir [DEPLOYMENT.md](./DEPLOYMENT.md) et [CHECKLIST-PRODUCTION.md](./CHECKLIST-PRODUCTION.md).
 
@@ -102,7 +102,7 @@ prisma/seed.ts
 
 ## Module Magasinier (`/warehouse/dashboard`)
 
-Compte démo magasinier : `magasin@sofismart.ma` / `SofiSmart2026!`
+Compte démo magasinier : `magasin@sofismart.com` / `SofiSmart2026!`
 
 ### Workflow
 
@@ -114,16 +114,16 @@ Compte démo magasinier : `magasin@sofismart.ma` / `SofiSmart2026!`
 
 ### API principales
 
-| Route | Description |
-|-------|-------------|
-| `GET /api/warehouse/dashboard` | Stats + listes agrégées |
-| `GET /api/warehouse/pending-deliveries` | Ventes à livrer |
-| `POST /api/warehouse/sales/:id/delivery-note/generate` | Créer BLV |
-| `POST /api/warehouse/delivery-notes/:id/confirm-delivery` | Confirmer livraison |
-| `POST /api/warehouse/delivery-notes/:id/upload-signed` | Joindre bon signé |
+| Route                                                     | Description             |
+| --------------------------------------------------------- | ----------------------- |
+| `GET /api/warehouse/dashboard`                            | Stats + listes agrégées |
+| `GET /api/warehouse/pending-deliveries`                   | Ventes à livrer         |
+| `POST /api/warehouse/sales/:id/delivery-note/generate`    | Créer BLV               |
+| `POST /api/warehouse/delivery-notes/:id/confirm-delivery` | Confirmer livraison     |
+| `POST /api/warehouse/delivery-notes/:id/upload-signed`    | Joindre bon signé       |
 
 Permissions métier `warehouse.*` mappées sur le module RBAC `magasin` (`view`, `validate`).
 
 ---
 
-*BY CROWN CAPITAL TRUST — identité visuelle SOFISMART.*
+_BY CROWN CAPITAL TRUST — identité visuelle SOFISMART._

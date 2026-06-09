@@ -9,8 +9,9 @@ const SECURITY_EVENTS = new Set([
 
 export function wrapEmailLayout(bodyHtml: string, preheader?: string): string {
   const logo = process.env.EMAIL_LOGO_URL ?? "";
-  const support = process.env.EMAIL_SUPPORT_EMAIL ?? process.env.SMTP_REPLY_TO ?? "";
-  const appUrl = process.env.APP_URL ?? "https://sofismart.ma";
+  const support =
+    process.env.EMAIL_SUPPORT_EMAIL ?? process.env.SMTP_REPLY_TO ?? "";
+  const appUrl = process.env.APP_URL ?? "https://sofismart.com";
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -43,15 +44,30 @@ export function renderEmailButton(label: string, url: string): string {
 }
 
 export function renderPlainBodyFromHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-export function renderEmailSubject(template: string, payload: Record<string, unknown>): string {
-  return renderTemplate(template, payload as Record<string, string | number | null | undefined>);
+export function renderEmailSubject(
+  template: string,
+  payload: Record<string, unknown>,
+): string {
+  return renderTemplate(
+    template,
+    payload as Record<string, string | number | null | undefined>,
+  );
 }
 
-export function renderEmailHtml(template: string, payload: Record<string, unknown>): string {
-  const inner = renderTemplate(template, payload as Record<string, string | number | null | undefined>);
+export function renderEmailHtml(
+  template: string,
+  payload: Record<string, unknown>,
+): string {
+  const inner = renderTemplate(
+    template,
+    payload as Record<string, string | number | null | undefined>,
+  );
   return wrapEmailLayout(inner, renderPlainBodyFromHtml(inner).slice(0, 120));
 }
 

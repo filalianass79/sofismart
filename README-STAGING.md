@@ -8,11 +8,11 @@ Guide pour déployer une instance **totalement indépendante** de la production,
 DEV (local)  →  TEST / STAGING (Vercel + Neon)  →  PRODUCTION
 ```
 
-| Environnement | Base de données | Hébergement | Données |
-|---------------|-----------------|-------------|---------|
-| DEV | Docker local :5433 | `npm run dev` | Demo locale |
-| STAGING | Neon PostgreSQL (projet séparé) | Vercel Preview | Seed staging |
-| PRODUCTION | Neon / serveur dédié | Vercel / Docker | Réelles |
+| Environnement | Base de données                 | Hébergement     | Données      |
+| ------------- | ------------------------------- | --------------- | ------------ |
+| DEV           | Docker local :5433              | `npm run dev`   | Demo locale  |
+| STAGING       | Neon PostgreSQL (projet séparé) | Vercel Preview  | Seed staging |
+| PRODUCTION    | Neon / serveur dédié            | Vercel / Docker | Réelles      |
 
 **Règle absolue :** ne jamais partager `DATABASE_URL`, `AUTH_SECRET` ou données entre staging et production.
 
@@ -39,11 +39,11 @@ Santé : [http://localhost:3000/health](http://localhost:3000/health)
 
 ## 2. Variables d'environnement
 
-| Fichier | Usage |
-|---------|--------|
-| `.env.example` | Template développement local |
-| `.env.staging.example` | Template staging → copier en `.env.staging` |
-| `.env.production.example` | Template production |
+| Fichier                   | Usage                                       |
+| ------------------------- | ------------------------------------------- |
+| `.env.example`            | Template développement local                |
+| `.env.staging.example`    | Template staging → copier en `.env.staging` |
+| `.env.production.example` | Template production                         |
 
 Variables clés staging :
 
@@ -72,18 +72,18 @@ ENABLE_MOCK_NOTIFICATIONS=true
 2. Environnement **Preview** ou projet dédié `sofismart-staging`
 3. **Variables obligatoires** (Settings → Environment Variables → cocher **Production** et **Preview**) :
 
-| Variable | Exemple |
-|----------|---------|
-| `DATABASE_URL` | Connection string Neon (`?sslmode=require`) |
-| `AUTH_SECRET` | `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | `https://votre-app.vercel.app` |
-| `APP_URL` | même URL que `NEXTAUTH_URL` |
-| `NEXT_PUBLIC_APP_ENV` | `staging` |
-| `NEXT_PUBLIC_APP_NAME` | `SOFISMART TEST` |
-| `APP_ENV` | `staging` |
-| `EMAIL_ENABLED` | `true` |
-| `EMAIL_TEST_MODE` | `true` |
-| `WHATSAPP_ENABLED` | `false` |
+| Variable               | Exemple                                     |
+| ---------------------- | ------------------------------------------- |
+| `DATABASE_URL`         | Connection string Neon (`?sslmode=require`) |
+| `AUTH_SECRET`          | `openssl rand -base64 32`                   |
+| `NEXTAUTH_URL`         | `https://votre-app.vercel.app`              |
+| `APP_URL`              | même URL que `NEXTAUTH_URL`                 |
+| `NEXT_PUBLIC_APP_ENV`  | `staging`                                   |
+| `NEXT_PUBLIC_APP_NAME` | `SOFISMART TEST`                            |
+| `APP_ENV`              | `staging`                                   |
+| `EMAIL_ENABLED`        | `true`                                      |
+| `EMAIL_TEST_MODE`      | `true`                                      |
+| `WHATSAPP_ENABLED`     | `false`                                     |
 
 4. Région recommandée : `cdg1` (Paris) — configurée dans `vercel.json`
 5. Build : `prisma generate && next build` (automatique)
@@ -138,13 +138,13 @@ Crée :
 
 ## 7. Comptes de test
 
-| Rôle | Email | Mot de passe |
-|------|-------|--------------|
-| Administrateur | admin@test.sofismart.ma | Admin123* |
-| Commercial | commercial@test.sofismart.ma | Test123* |
-| Magasinier | magasinier@test.sofismart.ma | Test123* |
-| Comptable | comptable@test.sofismart.ma | Test123* |
-| Directeur | directeur@test.sofismart.ma | Test123* |
+| Rôle           | Email                         | Mot de passe |
+| -------------- | ----------------------------- | ------------ |
+| Administrateur | admin@test.sofismart.com      | Admin123\*   |
+| Commercial     | commercial@test.sofismart.com | Test123\*    |
+| Magasinier     | magasinier@test.sofismart.com | Test123\*    |
+| Comptable      | comptable@test.sofismart.com  | Test123\*    |
+| Directeur      | directeur@test.sofismart.com  | Test123\*    |
 
 ---
 
@@ -160,11 +160,11 @@ En staging (`NEXT_PUBLIC_APP_ENV=staging`) :
 
 ## 9. Notifications simulées
 
-| Canal | Comportement staging |
-|-------|---------------------|
-| WhatsApp | `WHATSAPP_ENABLED=false` → logs simulés (statut SENT) |
-| Email | `EMAIL_TEST_MODE=true` + `EMAIL_LOG_ONLY=true` → journalisation sans envoi réel |
-| Email (option) | `EMAIL_TEST_RECIPIENT=votre@email.com` → redirection vers une seule adresse |
+| Canal          | Comportement staging                                                            |
+| -------------- | ------------------------------------------------------------------------------- |
+| WhatsApp       | `WHATSAPP_ENABLED=false` → logs simulés (statut SENT)                           |
+| Email          | `EMAIL_TEST_MODE=true` + `EMAIL_LOG_ONLY=true` → journalisation sans envoi réel |
+| Email (option) | `EMAIL_TEST_RECIPIENT=votre@email.com` → redirection vers une seule adresse     |
 
 ---
 
@@ -188,13 +188,13 @@ Bouton **Générer PDF TEST** sur `/about-test`.
 
 ## 11. Scripts npm
 
-| Script | Description |
-|--------|-------------|
-| `npm run staging` | Dev avec `.env.staging` |
-| `npm run seed:staging` | Seed base staging |
-| `npm run demo:documents` | PDF de démonstration |
+| Script                    | Description               |
+| ------------------------- | ------------------------- |
+| `npm run staging`         | Dev avec `.env.staging`   |
+| `npm run seed:staging`    | Seed base staging         |
+| `npm run demo:documents`  | PDF de démonstration      |
 | `npm run test:deployment` | lint + type-check + build |
-| `npm run build` | Build production |
+| `npm run build`           | Build production          |
 
 ---
 

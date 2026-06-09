@@ -14,7 +14,7 @@ param(
   [string]$Region = "eu-west-3",
   [string]$StackName = "sofismart-prod",
   [string]$AppUrl = "http://localhost",
-  [string]$AdminEmail = "admin@sofismart.ma",
+  [string]$AdminEmail = "admin@sofismart.com",
   [string]$AdminPassword = ""
 )
 

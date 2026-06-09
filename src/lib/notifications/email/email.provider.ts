@@ -20,7 +20,10 @@ export function getEmailTestRecipient(): string | null {
 export function getFromAddress(): { name: string; email: string } {
   return {
     name: process.env.SMTP_FROM_NAME ?? "SOFISMART",
-    email: process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_FROM ?? "noreply@sofismart.ma",
+    email:
+      process.env.SMTP_FROM_EMAIL ??
+      process.env.SMTP_FROM ??
+      "noreply@sofismart.com",
   };
 }
 

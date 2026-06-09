@@ -6,12 +6,12 @@ Le module Achats couvre le cycle complet d'acquisition d'un véhicule : fourniss
 
 ## Pages
 
-| URL | Description |
-|-----|-------------|
-| `/dashboard/purchases` | Liste avec filtres et actions |
-| `/dashboard/purchases/new` | Assistant stepper (6 étapes) |
-| `/dashboard/purchases/[id]` | Détail achat |
-| `/dashboard/purchases/[id]/edit` | Modification / brouillon |
+| URL                              | Description                   |
+| -------------------------------- | ----------------------------- |
+| `/dashboard/purchases`           | Liste avec filtres et actions |
+| `/dashboard/purchases/new`       | Assistant stepper (6 étapes)  |
+| `/dashboard/purchases/[id]`      | Détail achat                  |
+| `/dashboard/purchases/[id]/edit` | Modification / brouillon      |
 
 ## API
 
@@ -41,7 +41,7 @@ Le module Achats couvre le cycle complet d'acquisition d'un véhicule : fourniss
 
 ## Comptes démo
 
-Après `npm run db:seed` : `admin@sofismart.ma` / `SofiSmart2026!`
+Après `npm run db:seed` : `admin@sofismart.com` / `SofiSmart2026!`
 
 ## Commandes
 

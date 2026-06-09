@@ -14,7 +14,9 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const seedMode = process.env.SEED_MODE ?? (process.env.NODE_ENV === "production" ? "production" : "demo");
+  const seedMode =
+    process.env.SEED_MODE ??
+    (process.env.NODE_ENV === "production" ? "production" : "demo");
 
   if (seedMode === "production") {
     await seedProduction(prisma);
@@ -33,7 +35,9 @@ async function main() {
   await seedRbac(prisma);
   await seedNotifications(prisma);
   await seedEmails(prisma);
-  const adminRole = await prisma.role.findUniqueOrThrow({ where: { code: "ADMIN" } });
+  const adminRole = await prisma.role.findUniqueOrThrow({
+    where: { code: "ADMIN" },
+  });
   const hash = await bcrypt.hash("SofiSmart2026!", 12);
 
   const depotA = await prisma.depot.upsert({
@@ -67,7 +71,7 @@ async function main() {
       reference: "SAL-2026-0001",
       firstName: "Admin",
       lastName: "SOFISMART",
-      professionalEmail: "admin@sofismart.ma",
+      professionalEmail: "admin@sofismart.com",
       jobFunction: "ADMINISTRATEUR",
       department: "Direction",
       status: "ACTIVE",
@@ -76,7 +80,7 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "admin@sofismart.ma" },
+    where: { email: "admin@sofismart.com" },
     update: {
       passwordHash: hash,
       role: "ADMIN",
@@ -86,7 +90,7 @@ async function main() {
       username: "admin",
     },
     create: {
-      email: "admin@sofismart.ma",
+      email: "admin@sofismart.com",
       name: "Administrateur",
       username: "admin",
       passwordHash: hash,
@@ -97,7 +101,9 @@ async function main() {
     },
   });
 
-  const commercialRole = await prisma.role.findUniqueOrThrow({ where: { code: "COMMERCIAL" } });
+  const commercialRole = await prisma.role.findUniqueOrThrow({
+    where: { code: "COMMERCIAL" },
+  });
   const commercialEmployee = await prisma.employee.upsert({
     where: { reference: "SAL-2026-0002" },
     update: {},
@@ -105,17 +111,21 @@ async function main() {
       reference: "SAL-2026-0002",
       firstName: "Commercial",
       lastName: "Demo",
-      professionalEmail: "commercial@sofismart.ma",
+      professionalEmail: "commercial@sofismart.com",
       jobFunction: "COMMERCIAL",
       status: "ACTIVE",
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "commercial@sofismart.ma" },
-    update: { passwordHash: hash, roleId: commercialRole.id, employeeId: commercialEmployee.id },
+    where: { email: "commercial@sofismart.com" },
+    update: {
+      passwordHash: hash,
+      roleId: commercialRole.id,
+      employeeId: commercialEmployee.id,
+    },
     create: {
-      email: "commercial@sofismart.ma",
+      email: "commercial@sofismart.com",
       name: "Commercial Demo",
       username: "commercial",
       passwordHash: hash,
@@ -165,7 +175,12 @@ async function main() {
   });
 
   const legacy = await prisma.client.findMany({
-    where: { OR: [{ reference: "CLI-LEGACY" }, { NOT: { reference: { startsWith: "CLI-202" } } }] },
+    where: {
+      OR: [
+        { reference: "CLI-LEGACY" },
+        { NOT: { reference: { startsWith: "CLI-202" } } },
+      ],
+    },
   });
   let seq = 1;
   for (const c of legacy) {
@@ -297,7 +312,10 @@ async function main() {
       paymentStatus: "PAID",
       paymentMethod: "TRANSFER",
       fees: {
-        create: [{ type: "CUSTOMS", amount: 25000 }, { type: "TRANSPORT", amount: 10000 }],
+        create: [
+          { type: "CUSTOMS", amount: 25000 },
+          { type: "TRANSPORT", amount: 10000 },
+        ],
       },
     },
   });
@@ -344,7 +362,7 @@ async function main() {
       country: "Maroc",
       city: "Casablanca",
       phone: "+212 5 22 00 00 00",
-      email: "contact@sofismart.ma",
+      email: "contact@sofismart.com",
     },
   });
 
@@ -356,11 +374,13 @@ async function main() {
   });
 
   console.log("\n——— Comptes de test (mot de passe : SofiSmart2026!) ———");
-  console.log("  admin@sofismart.ma");
-  console.log("  commercial@sofismart.ma | commercial2@sofismart.ma");
-  console.log("  gerant@sofismart.ma | comptable@sofismart.ma | magasin@sofismart.ma");
+  console.log("  admin@sofismart.com");
+  console.log("  commercial@sofismart.com | commercial2@sofismart.com");
   console.log(
-    "——— Véhicules vente : V-2026-0001 + 30 achats test (V-0003 → 0032), V-0002 vendu, 1 réservé ———\n"
+    "  gerant@sofismart.com | comptable@sofismart.com | magasin@sofismart.com",
+  );
+  console.log(
+    "——— Véhicules vente : V-2026-0001 + 30 achats test (V-0003 → 0032), V-0002 vendu, 1 réservé ———\n",
   );
 
   await prisma.$disconnect();

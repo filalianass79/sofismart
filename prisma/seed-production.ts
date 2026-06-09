@@ -12,15 +12,19 @@ export async function seedProduction(prisma: PrismaClient) {
   await seedNotifications(prisma);
   await seedEmails(prisma);
 
-  const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@sofismart.ma").toLowerCase().trim();
+  const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@sofismart.com")
+    .toLowerCase()
+    .trim();
   const password = process.env.SEED_ADMIN_PASSWORD;
   if (!password || password.length < 12) {
     throw new Error(
-      "SEED_ADMIN_PASSWORD requis (min. 12 caractères) pour le seed production."
+      "SEED_ADMIN_PASSWORD requis (min. 12 caractères) pour le seed production.",
     );
   }
 
-  const adminRole = await prisma.role.findUniqueOrThrow({ where: { code: "ADMIN" } });
+  const adminRole = await prisma.role.findUniqueOrThrow({
+    where: { code: "ADMIN" },
+  });
   const hash = await bcrypt.hash(password, 12);
   const displayName = process.env.SEED_ADMIN_NAME ?? "Administrateur SOFISMART";
 

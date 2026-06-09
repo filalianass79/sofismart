@@ -23,7 +23,10 @@ type VehicleSeed = {
   depotId: string;
   supplierKey: string;
   purchasePrice: number;
-  fees: { type: "TRANSPORT" | "CUSTOMS" | "CLEANING" | "REGISTRATION" | "OTHER"; amount: number }[];
+  fees: {
+    type: "TRANSPORT" | "CUSTOMS" | "CLEANING" | "REGISTRATION" | "OTHER";
+    amount: number;
+  }[];
   targetSalePrice: number;
   purchaseDate: string;
   status?: "IN_STOCK" | "PREPARATION" | "RESERVED";
@@ -37,21 +40,84 @@ function buildSalesTestVehicles(
   depotCasaId: string,
   depotRabatId: string,
   startIndex: number,
-  count: number
+  count: number,
 ): VehicleSeed[] {
-  const catalog: Pick<VehicleSeed, "brandLabel" | "modelLabel" | "version" | "fuel">[] = [
-    { brandLabel: "BMW", modelLabel: "Série 3", version: "320d M Sport", fuel: "DIESEL" },
-    { brandLabel: "BMW", modelLabel: "X3", version: "xDrive20d", fuel: "DIESEL" },
-    { brandLabel: "Renault", modelLabel: "Clio V", version: "Intens TCe 90", fuel: "ESSENCE" },
-    { brandLabel: "Renault", modelLabel: "Captur", version: "Zen TCe 140", fuel: "ESSENCE" },
-    { brandLabel: "Peugeot", modelLabel: "3008", version: "GT Line 1.5 BlueHDi", fuel: "DIESEL" },
-    { brandLabel: "Peugeot", modelLabel: "208", version: "GT 1.2 PureTech 130", fuel: "ESSENCE" },
-    { brandLabel: "Toyota", modelLabel: "Corolla", version: "1.8 Hybrid Lounge", fuel: "HYBRIDE" },
-    { brandLabel: "Toyota", modelLabel: "RAV4", version: "Hybrid Dynamic 2WD", fuel: "HYBRIDE" },
-    { brandLabel: "Volkswagen", modelLabel: "Golf 8", version: "1.5 TSI Style", fuel: "ESSENCE" },
-    { brandLabel: "Mercedes-Benz", modelLabel: "GLC", version: "220 d 4Matic", fuel: "DIESEL" },
-    { brandLabel: "Audi", modelLabel: "A4", version: "35 TDI S line", fuel: "DIESEL" },
-    { brandLabel: "Mercedes-Benz", modelLabel: "Classe E", version: "220 d AMG Line", fuel: "DIESEL" },
+  const catalog: Pick<
+    VehicleSeed,
+    "brandLabel" | "modelLabel" | "version" | "fuel"
+  >[] = [
+    {
+      brandLabel: "BMW",
+      modelLabel: "Série 3",
+      version: "320d M Sport",
+      fuel: "DIESEL",
+    },
+    {
+      brandLabel: "BMW",
+      modelLabel: "X3",
+      version: "xDrive20d",
+      fuel: "DIESEL",
+    },
+    {
+      brandLabel: "Renault",
+      modelLabel: "Clio V",
+      version: "Intens TCe 90",
+      fuel: "ESSENCE",
+    },
+    {
+      brandLabel: "Renault",
+      modelLabel: "Captur",
+      version: "Zen TCe 140",
+      fuel: "ESSENCE",
+    },
+    {
+      brandLabel: "Peugeot",
+      modelLabel: "3008",
+      version: "GT Line 1.5 BlueHDi",
+      fuel: "DIESEL",
+    },
+    {
+      brandLabel: "Peugeot",
+      modelLabel: "208",
+      version: "GT 1.2 PureTech 130",
+      fuel: "ESSENCE",
+    },
+    {
+      brandLabel: "Toyota",
+      modelLabel: "Corolla",
+      version: "1.8 Hybrid Lounge",
+      fuel: "HYBRIDE",
+    },
+    {
+      brandLabel: "Toyota",
+      modelLabel: "RAV4",
+      version: "Hybrid Dynamic 2WD",
+      fuel: "HYBRIDE",
+    },
+    {
+      brandLabel: "Volkswagen",
+      modelLabel: "Golf 8",
+      version: "1.5 TSI Style",
+      fuel: "ESSENCE",
+    },
+    {
+      brandLabel: "Mercedes-Benz",
+      modelLabel: "GLC",
+      version: "220 d 4Matic",
+      fuel: "DIESEL",
+    },
+    {
+      brandLabel: "Audi",
+      modelLabel: "A4",
+      version: "35 TDI S line",
+      fuel: "DIESEL",
+    },
+    {
+      brandLabel: "Mercedes-Benz",
+      modelLabel: "Classe E",
+      version: "220 d AMG Line",
+      fuel: "DIESEL",
+    },
   ];
   const colors = ["Noir", "Blanc", "Gris", "Bleu", "Rouge", "Argent", "Beige"];
   const origins: VehicleSeed["origin"][] = ["USED", "NEW", "IMPORTED"];
@@ -111,13 +177,21 @@ function buildSalesTestVehicles(
 export async function seedDemoData(ctx: SeedContext) {
   const { prisma, passwordHash, depotCasaId, depotRabatId } = ctx;
 
-  const commercialRole = await prisma.role.findUniqueOrThrow({ where: { code: "COMMERCIAL" } });
-  const gerantRole = await prisma.role.findUniqueOrThrow({ where: { code: "GERANT" } });
-  const comptableRole = await prisma.role.findUniqueOrThrow({ where: { code: "COMPTABLE" } });
-  const magasinierRole = await prisma.role.findUniqueOrThrow({ where: { code: "MAGASINIER" } });
+  const commercialRole = await prisma.role.findUniqueOrThrow({
+    where: { code: "COMMERCIAL" },
+  });
+  const gerantRole = await prisma.role.findUniqueOrThrow({
+    where: { code: "GERANT" },
+  });
+  const comptableRole = await prisma.role.findUniqueOrThrow({
+    where: { code: "COMPTABLE" },
+  });
+  const magasinierRole = await prisma.role.findUniqueOrThrow({
+    where: { code: "MAGASINIER" },
+  });
 
   const commercialUser = await prisma.user.findUniqueOrThrow({
-    where: { email: "commercial@sofismart.ma" },
+    where: { email: "commercial@sofismart.com" },
   });
 
   // ——— Salariés & comptes ———
@@ -126,7 +200,7 @@ export async function seedDemoData(ctx: SeedContext) {
       reference: "SAL-2026-0003",
       firstName: "Karim",
       lastName: "Bennani",
-      email: "gerant@sofismart.ma",
+      email: "gerant@sofismart.com",
       username: "gerant",
       roleId: gerantRole.id,
       role: "COMMERCIAL" as const,
@@ -137,7 +211,7 @@ export async function seedDemoData(ctx: SeedContext) {
       reference: "SAL-2026-0004",
       firstName: "Sanae",
       lastName: "Alaoui",
-      email: "comptable@sofismart.ma",
+      email: "comptable@sofismart.com",
       username: "comptable",
       roleId: comptableRole.id,
       role: "ACCOUNTANT" as const,
@@ -148,7 +222,7 @@ export async function seedDemoData(ctx: SeedContext) {
       reference: "SAL-2026-0005",
       firstName: "Youssef",
       lastName: "Tazi",
-      email: "magasin@sofismart.ma",
+      email: "magasin@sofismart.com",
       username: "magasin",
       roleId: magasinierRole.id,
       role: "DEPOT_MANAGER" as const,
@@ -160,7 +234,7 @@ export async function seedDemoData(ctx: SeedContext) {
       reference: "SAL-2026-0006",
       firstName: "Nadia",
       lastName: "Idrissi",
-      email: "commercial2@sofismart.ma",
+      email: "commercial2@sofismart.com",
       username: "commercial2",
       roleId: commercialRole.id,
       role: "COMMERCIAL" as const,
@@ -216,7 +290,7 @@ export async function seedDemoData(ctx: SeedContext) {
       },
     });
 
-    if (e.email === "magasin@sofismart.ma") {
+    if (e.email === "magasin@sofismart.com") {
       await prisma.depot.update({
         where: { id: depotCasaId },
         data: { managerId: user.id },
@@ -279,7 +353,9 @@ export async function seedDemoData(ctx: SeedContext) {
     },
   ];
 
-  const supplierIds: Record<string, string> = { "seed-supplier-1": "seed-supplier-1" };
+  const supplierIds: Record<string, string> = {
+    "seed-supplier-1": "seed-supplier-1",
+  };
 
   for (const s of suppliersData) {
     const row = await prisma.supplier.upsert({
@@ -314,7 +390,9 @@ export async function seedDemoData(ctx: SeedContext) {
     supplierIds[s.id] = row.id;
   }
 
-  const s1 = await prisma.supplier.findUniqueOrThrow({ where: { id: "seed-supplier-1" } });
+  const s1 = await prisma.supplier.findUniqueOrThrow({
+    where: { id: "seed-supplier-1" },
+  });
   supplierIds["seed-supplier-1"] = s1.id;
 
   // ——— Clients ———
@@ -453,13 +531,17 @@ export async function seedDemoData(ctx: SeedContext) {
   // ——— Catalogue ———
   const brands = await Promise.all(
     ["BMW", "Renault", "Peugeot", "Toyota", "Volkswagen"].map((label) =>
-      prisma.brand.upsert({ where: { label }, update: {}, create: { label } })
-    )
+      prisma.brand.upsert({ where: { label }, update: {}, create: { label } }),
+    ),
   );
   const brandMap = Object.fromEntries(brands.map((b) => [b.label, b.id]));
 
-  const mercedes = await prisma.brand.findUniqueOrThrow({ where: { label: "Mercedes-Benz" } });
-  const audi = await prisma.brand.findUniqueOrThrow({ where: { label: "Audi" } });
+  const mercedes = await prisma.brand.findUniqueOrThrow({
+    where: { label: "Mercedes-Benz" },
+  });
+  const audi = await prisma.brand.findUniqueOrThrow({
+    where: { label: "Audi" },
+  });
 
   const models: { brandLabel: string; label: string }[] = [
     { brandLabel: "BMW", label: "Série 3" },
@@ -478,7 +560,11 @@ export async function seedDemoData(ctx: SeedContext) {
   const modelMap: Record<string, string> = {};
   for (const m of models) {
     const brandId =
-      m.brandLabel === "Mercedes-Benz" ? mercedes.id : m.brandLabel === "Audi" ? audi.id : brandMap[m.brandLabel];
+      m.brandLabel === "Mercedes-Benz"
+        ? mercedes.id
+        : m.brandLabel === "Audi"
+          ? audi.id
+          : brandMap[m.brandLabel];
     const row = await prisma.vehicleModel.upsert({
       where: { brandId_label: { brandId, label: m.label } },
       update: {},
@@ -497,7 +583,7 @@ export async function seedDemoData(ctx: SeedContext) {
     depotCasaId,
     depotRabatId,
     3,
-    SALES_TEST_PURCHASE_COUNT
+    SALES_TEST_PURCHASE_COUNT,
   );
 
   for (const v of vehicles) {
@@ -582,6 +668,6 @@ export async function seedDemoData(ctx: SeedContext) {
   const firstRef = vehicles[0]?.ref ?? "—";
   const lastRef = vehicles[vehicles.length - 1]?.ref ?? "—";
   console.log(
-    `✓ Données démo : 4 salariés, 6 fournisseurs, 9 clients, ${vehicles.length} achats véhicules (${firstRef} → ${lastRef}, tests vente)`
+    `✓ Données démo : 4 salariés, 6 fournisseurs, 9 clients, ${vehicles.length} achats véhicules (${firstRef} → ${lastRef}, tests vente)`,
   );
 }

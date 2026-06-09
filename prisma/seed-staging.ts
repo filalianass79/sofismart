@@ -1,6 +1,6 @@
 /**
  * Seed complet environnement TEST / STAGING
- * Comptes @test.sofismart.ma — mot de passe admin: Admin123* | autres: Test123*
+ * Comptes @test.sofismart.com — mot de passe admin: Admin123* | autres: Test123*
  */
 import bcrypt from "bcryptjs";
 import type { PrismaClient } from "../src/generated/prisma/client";
@@ -26,7 +26,7 @@ type StagingUser = {
 
 const STAGING_USERS: StagingUser[] = [
   {
-    email: "admin@test.sofismart.ma",
+    email: "admin@test.sofismart.com",
     name: "Admin Test",
     username: "admin-test",
     roleCode: "ADMIN",
@@ -36,7 +36,7 @@ const STAGING_USERS: StagingUser[] = [
     password: STAGING_PASSWORDS.admin,
   },
   {
-    email: "commercial@test.sofismart.ma",
+    email: "commercial@test.sofismart.com",
     name: "Commercial Test",
     username: "commercial-test",
     roleCode: "COMMERCIAL",
@@ -46,7 +46,7 @@ const STAGING_USERS: StagingUser[] = [
     password: STAGING_PASSWORDS.default,
   },
   {
-    email: "magasinier@test.sofismart.ma",
+    email: "magasinier@test.sofismart.com",
     name: "Magasinier Test",
     username: "magasinier-test",
     roleCode: "MAGASINIER",
@@ -56,7 +56,7 @@ const STAGING_USERS: StagingUser[] = [
     password: STAGING_PASSWORDS.default,
   },
   {
-    email: "comptable@test.sofismart.ma",
+    email: "comptable@test.sofismart.com",
     name: "Comptable Test",
     username: "comptable-test",
     roleCode: "COMPTABLE",
@@ -66,7 +66,7 @@ const STAGING_USERS: StagingUser[] = [
     password: STAGING_PASSWORDS.default,
   },
   {
-    email: "directeur@test.sofismart.ma",
+    email: "directeur@test.sofismart.com",
     name: "Directeur Test",
     username: "directeur-test",
     roleCode: "DIRECTEUR",
@@ -91,9 +91,26 @@ const SUPPLIER_NAMES = [
 ];
 
 const CLIENT_FIRST = [
-  "Karim", "Salma", "Youssef", "Nadia", "Omar", "Leila", "Hassan", "Imane",
-  "Mehdi", "Sara", "Amine", "Fatima", "Rachid", "Zineb", "Khalid", "Aya",
-  "Samir", "Houda", "Tarik", "Meryem",
+  "Karim",
+  "Salma",
+  "Youssef",
+  "Nadia",
+  "Omar",
+  "Leila",
+  "Hassan",
+  "Imane",
+  "Mehdi",
+  "Sara",
+  "Amine",
+  "Fatima",
+  "Rachid",
+  "Zineb",
+  "Khalid",
+  "Aya",
+  "Samir",
+  "Houda",
+  "Tarik",
+  "Meryem",
 ];
 
 const BRANDS = [
@@ -139,7 +156,9 @@ export async function seedStaging(prisma: PrismaClient) {
   });
 
   for (const u of STAGING_USERS) {
-    const role = await prisma.role.findUniqueOrThrow({ where: { code: u.roleCode } });
+    const role = await prisma.role.findUniqueOrThrow({
+      where: { code: u.roleCode },
+    });
     const employee = await prisma.employee.upsert({
       where: { reference: u.ref },
       update: { professionalEmail: u.email },
@@ -193,7 +212,7 @@ export async function seedStaging(prisma: PrismaClient) {
         companyName: SUPPLIER_NAMES[i],
         ice: `STG${String(100000000 + i).slice(0, 9)}`,
         phone: `+212600000${String(i).padStart(3, "0")}`,
-        email: `fournisseur${i + 1}@test.sofismart.ma`,
+        email: `fournisseur${i + 1}@test.sofismart.com`,
         city: i % 2 === 0 ? "Casablanca" : "Rabat",
         status: "ACTIVE",
       },
@@ -202,7 +221,7 @@ export async function seedStaging(prisma: PrismaClient) {
   }
 
   const commercial = await prisma.user.findUniqueOrThrow({
-    where: { email: "commercial@test.sofismart.ma" },
+    where: { email: "commercial@test.sofismart.com" },
   });
 
   const clients: { id: string }[] = [];
@@ -219,7 +238,7 @@ export async function seedStaging(prisma: PrismaClient) {
         firstName: CLIENT_FIRST[i],
         lastName: `Test${i + 1}`,
         phone: `+212611${String(100000 + i).slice(-6)}`,
-        email: `client${i + 1}@test.sofismart.ma`,
+        email: `client${i + 1}@test.sofismart.com`,
         city: i % 3 === 0 ? "Casablanca" : i % 3 === 1 ? "Rabat" : "Marrakech",
         relationshipStatus: "ACTIVE",
         financialStatus: "GOOD_PAYER",
@@ -229,7 +248,10 @@ export async function seedStaging(prisma: PrismaClient) {
     clients.push(c);
   }
 
-  const brandCache = new Map<string, { id: string; models: Map<string, string> }>();
+  const brandCache = new Map<
+    string,
+    { id: string; models: Map<string, string> }
+  >();
   for (const b of BRANDS) {
     const brand = await prisma.brand.upsert({
       where: { label: b.brand },
@@ -308,7 +330,12 @@ export async function seedStaging(prisma: PrismaClient) {
         advancePaid: 140_000 + i * 4_500,
         paymentStatus: "PAID",
         paymentMethod: "TRANSFER",
-        fees: { create: [{ type: "TRANSPORT", amount: 5000 }, { type: "CLEANING", amount: 3000 }] },
+        fees: {
+          create: [
+            { type: "TRANSPORT", amount: 5000 },
+            { type: "CLEANING", amount: 3000 },
+          ],
+        },
       },
     });
   }
@@ -359,7 +386,7 @@ export async function seedStaging(prisma: PrismaClient) {
     update: {
       legalName: "SOFISMART TEST SARL",
       tradeName: "SOFISMART TEST",
-      email: "contact@test.sofismart.ma",
+      email: "contact@test.sofismart.com",
     },
     create: {
       id: "default",
@@ -368,13 +395,15 @@ export async function seedStaging(prisma: PrismaClient) {
       country: "Maroc",
       city: "Casablanca",
       phone: "+212 5 22 00 00 00",
-      email: "contact@test.sofismart.ma",
+      email: "contact@test.sofismart.com",
     },
   });
 
   console.log("\n——— SOFISMART STAGING SEED ———");
-  console.log("  10 fournisseurs | 20 clients | 50 véhicules | 10 achats | 10 ventes");
-  console.log("\n  Comptes (@test.sofismart.ma) :");
+  console.log(
+    "  10 fournisseurs | 20 clients | 50 véhicules | 10 achats | 10 ventes",
+  );
+  console.log("\n  Comptes (@test.sofismart.com) :");
   for (const u of STAGING_USERS) {
     console.log(`    ${u.email}  /  ${u.password}  (${u.roleCode})`);
   }

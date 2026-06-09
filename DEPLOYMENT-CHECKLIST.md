@@ -27,11 +27,11 @@ Utiliser cette checklist avant chaque démo client ou validation de release.
 
 ## Authentification
 
-- [ ] Login admin@test.sofismart.ma — OK
-- [ ] Login commercial@test.sofismart.ma — OK
-- [ ] Login magasinier@test.sofismart.ma — OK
-- [ ] Login comptable@test.sofismart.ma — OK
-- [ ] Login directeur@test.sofismart.ma — OK
+- [ ] Login admin@test.sofismart.com — OK
+- [ ] Login commercial@test.sofismart.com — OK
+- [ ] Login magasinier@test.sofismart.com — OK
+- [ ] Login comptable@test.sofismart.com — OK
+- [ ] Login directeur@test.sofismart.com — OK
 - [ ] Bandeau TEST visible après connexion
 
 ## Modules métier
@@ -77,6 +77,6 @@ Utiliser cette checklist avant chaque démo client ou validation de release.
 
 ---
 
-**Date validation :** _______________  
-**Validé par :** _______________  
-**URL staging :** _______________
+**Date validation :** ******\_\_\_******  
+**Validé par :** ******\_\_\_******  
+**URL staging :** ******\_\_\_******

@@ -19,14 +19,14 @@ ECS Fargate (conteneur Next.js)
     └── Amazon SES (e-mails transactionnels)
 ```
 
-| Composant | Service AWS | Rôle |
-|-----------|-------------|------|
-| Application | **ECS Fargate** | Next.js standalone (Docker) |
-| Base de données | **RDS PostgreSQL 16** | Données métier |
-| Fichiers | **S3** + CloudFront | Uploads persistants |
-| Secrets | **Secrets Manager** | `DATABASE_URL`, `AUTH_SECRET`, SMTP… |
-| E-mail | **SES** ou SMTP externe | Notifications |
-| CI/CD | **GitHub Actions** → ECR → ECS | Déploiement automatisé |
+| Composant       | Service AWS                    | Rôle                                 |
+| --------------- | ------------------------------ | ------------------------------------ |
+| Application     | **ECS Fargate**                | Next.js standalone (Docker)          |
+| Base de données | **RDS PostgreSQL 16**          | Données métier                       |
+| Fichiers        | **S3** + CloudFront            | Uploads persistants                  |
+| Secrets         | **Secrets Manager**            | `DATABASE_URL`, `AUTH_SECRET`, SMTP… |
+| E-mail          | **SES** ou SMTP externe        | Notifications                        |
+| CI/CD           | **GitHub Actions** → ECR → ECS | Déploiement automatisé               |
 
 **Région suggérée :** `eu-west-3` (Paris)
 
@@ -70,7 +70,7 @@ aws s3 mb s3://sofismart-prod-uploads --region eu-west-3
 1. Créer un bucket `sofismart-prod-uploads`
 2. Bloquer l'accès public direct
 3. Créer une distribution **CloudFront** avec origine S3
-4. Domaine CDN : `https://cdn.sofismart.ma` → `AWS_S3_PUBLIC_BASE_URL`
+4. Domaine CDN : `https://cdn.sofismart.com` → `AWS_S3_PUBLIC_BASE_URL`
 
 Variables :
 
@@ -78,7 +78,7 @@ Variables :
 UPLOAD_STORAGE=s3
 AWS_S3_BUCKET=sofismart-prod-uploads
 AWS_S3_REGION=eu-west-3
-AWS_S3_PUBLIC_BASE_URL=https://cdn.sofismart.ma
+AWS_S3_PUBLIC_BASE_URL=https://cdn.sofismart.com
 ```
 
 Le rôle IAM ECS (task role) doit avoir `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` sur le bucket (voir `deploy/aws/iam-task-policy.json`).
@@ -93,9 +93,9 @@ Créer un secret `sofismart/prod` (JSON) :
 {
   "DATABASE_URL": "postgresql://...",
   "AUTH_SECRET": "...",
-  "APP_URL": "https://app.sofismart.ma",
-  "NEXTAUTH_URL": "https://app.sofismart.ma",
-  "AWS_S3_PUBLIC_BASE_URL": "https://cdn.sofismart.ma",
+  "APP_URL": "https://app.sofismart.com",
+  "NEXTAUTH_URL": "https://app.sofismart.com",
+  "AWS_S3_PUBLIC_BASE_URL": "https://cdn.sofismart.com",
   "SMTP_HOST": "email-smtp.eu-west-3.amazonaws.com",
   "SMTP_USER": "...",
   "SMTP_PASS": "..."
@@ -162,7 +162,7 @@ Option A — tâche one-shot ECS avec :
 RUN_MIGRATIONS_ON_START=true
 RUN_SEED_ON_START=true
 SEED_MODE=production
-SEED_ADMIN_EMAIL=admin@sofismart.ma
+SEED_ADMIN_EMAIL=admin@sofismart.com
 SEED_ADMIN_PASSWORD=VotreMotDePasseFort12!
 ```
 
@@ -183,10 +183,10 @@ Puis remettre `RUN_MIGRATIONS_ON_START=false`.
 
 Secrets GitHub (Settings → Secrets) :
 
-| Secret | Description |
-|--------|-------------|
-| `AWS_ACCESS_KEY_ID` | Utilisateur IAM déploiement |
-| `AWS_SECRET_ACCESS_KEY` | Clé secrète |
+| Secret                  | Description                 |
+| ----------------------- | --------------------------- |
+| `AWS_ACCESS_KEY_ID`     | Utilisateur IAM déploiement |
+| `AWS_SECRET_ACCESS_KEY` | Clé secrète                 |
 
 Workflow : `.github/workflows/aws-production.yml`
 
@@ -200,16 +200,16 @@ Fichier modèle : **`.env.aws.example`**
 
 Variables critiques :
 
-| Variable | Obligatoire |
-|----------|-------------|
-| `DATABASE_URL` | ✓ |
-| `AUTH_SECRET` | ✓ (32+ chars) |
-| `APP_URL` / `NEXTAUTH_URL` | ✓ HTTPS |
-| `UPLOAD_STORAGE=s3` | ✓ |
-| `AWS_S3_BUCKET` | ✓ |
-| `AWS_S3_PUBLIC_BASE_URL` | ✓ (CloudFront) |
-| `EMAIL_ENABLED=true` | ✓ |
-| `ENABLE_DEBUG_MODE=false` | ✓ |
+| Variable                   | Obligatoire    |
+| -------------------------- | -------------- |
+| `DATABASE_URL`             | ✓              |
+| `AUTH_SECRET`              | ✓ (32+ chars)  |
+| `APP_URL` / `NEXTAUTH_URL` | ✓ HTTPS        |
+| `UPLOAD_STORAGE=s3`        | ✓              |
+| `AWS_S3_BUCKET`            | ✓              |
+| `AWS_S3_PUBLIC_BASE_URL`   | ✓ (CloudFront) |
+| `EMAIL_ENABLED=true`       | ✓              |
+| `ENABLE_DEBUG_MODE=false`  | ✓              |
 
 ---
 
@@ -237,12 +237,12 @@ Voir [AWS-DEPLOYMENT-CHECKLIST.md](./AWS-DEPLOYMENT-CHECKLIST.md)
 
 ## Séparation des environnements
 
-| | STAGING | PRODUCTION AWS |
-|--|---------|----------------|
-| Hébergement | Vercel | ECS Fargate |
-| Base | Neon | RDS PostgreSQL |
-| Fichiers | Local (éphémère) | S3 + CloudFront |
-| Domaine | `*.vercel.app` | `app.sofismart.ma` |
-| Données | Fictives | Réelles |
+|             | STAGING          | PRODUCTION AWS      |
+| ----------- | ---------------- | ------------------- |
+| Hébergement | Vercel           | ECS Fargate         |
+| Base        | Neon             | RDS PostgreSQL      |
+| Fichiers    | Local (éphémère) | S3 + CloudFront     |
+| Domaine     | `*.vercel.app`   | `app.sofismart.com` |
+| Données     | Fictives         | Réelles             |
 
 **Ne jamais partager** `DATABASE_URL`, buckets S3 ou secrets entre staging et production.

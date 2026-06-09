@@ -9,20 +9,20 @@ npm run db:seed
 npm run dev
 ```
 
-Compte admin : `admin@sofismart.ma` / `SofiSmart2026!`
+Compte admin : `admin@sofismart.com` / `SofiSmart2026!`
 
 ## Pages
 
-| Route | Description |
-|-------|-------------|
-| `/dashboard/employees` | Liste salariés |
-| `/dashboard/employees/new` | Création |
-| `/dashboard/users` | Comptes utilisateurs |
-| `/dashboard/roles` | Rôles système |
-| `/dashboard/roles/[id]/permissions` | Matrice permissions |
-| `/dashboard/profile` | Mon profil |
-| `/dashboard/security/change-password` | Changement MDP |
-| `/dashboard/audit-logs` | Journal d'audit |
+| Route                                 | Description          |
+| ------------------------------------- | -------------------- |
+| `/dashboard/employees`                | Liste salariés       |
+| `/dashboard/employees/new`            | Création             |
+| `/dashboard/users`                    | Comptes utilisateurs |
+| `/dashboard/roles`                    | Rôles système        |
+| `/dashboard/roles/[id]/permissions`   | Matrice permissions  |
+| `/dashboard/profile`                  | Mon profil           |
+| `/dashboard/security/change-password` | Changement MDP       |
+| `/dashboard/audit-logs`               | Journal d'audit      |
 
 ## Permissions
 
