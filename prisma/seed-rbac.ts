@@ -37,19 +37,21 @@ export async function seedRbac(prisma: PrismaClient) {
       },
     });
 
-    const keys =
-      code === "ADMIN"
-        ? ALL_PERMISSION_KEYS
-        : (ROLE_DEFAULT_PERMISSIONS[code] ?? []);
-
-    // Réinitialise les droits du rôle système (retire ex. ventes.validate sur COMMERCIAL).
-    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
+    const keys = [
+      ...new Set(
+        code === "ADMIN"
+          ? ALL_PERMISSION_KEYS
+          : (ROLE_DEFAULT_PERMISSIONS[code] ?? []),
+      ),
+    ];
 
     for (const key of keys) {
       const pid = permByKey.get(key);
       if (!pid) continue;
-      await prisma.rolePermission.create({
-        data: { roleId: role.id, permissionId: pid, allowed: true },
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: role.id, permissionId: pid } },
+        update: { allowed: true },
+        create: { roleId: role.id, permissionId: pid, allowed: true },
       });
     }
   }
