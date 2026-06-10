@@ -21,9 +21,17 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublic(pathname)) return NextResponse.next();
 
+  const useSecureCookies = (
+    process.env.NEXTAUTH_URL ??
+    process.env.AUTH_URL ??
+    process.env.APP_URL ??
+    ""
+  ).startsWith("https://");
+
   const token = await getToken({
     req,
     secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+    secureCookie: useSecureCookies,
   });
 
   if (!token) {
