@@ -12,12 +12,12 @@ done
 
 if [ "$RUN_MIGRATIONS_ON_START" = "true" ]; then
   echo ">> prisma migrate deploy"
-  npx prisma migrate deploy
+  node ./node_modules/prisma/build/index.js migrate deploy
 fi
 
 if [ "$RUN_SEED_ON_START" = "true" ]; then
   echo ">> prisma db seed (SEED_MODE=${SEED_MODE:-production})"
-  npx prisma db seed
+  node ./node_modules/prisma/build/index.js db seed
 fi
 
 exec "$@"
