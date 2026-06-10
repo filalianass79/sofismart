@@ -18,6 +18,16 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["tesseract.js", "pdf-parse", "pdfjs-dist", "@aws-sdk/client-s3"],
   outputFileTracingIncludes: {
+    "/*": [
+      "./src/generated/prisma/**/*",
+      "./node_modules/@prisma/adapter-pg/**/*",
+      "./node_modules/pg/**/*",
+    ],
+    "/api/health": [
+      "./src/generated/prisma/**/*",
+      "./node_modules/@prisma/adapter-pg/**/*",
+      "./node_modules/pg/**/*",
+    ],
     "/api/purchases/invoice-import": [
       "./node_modules/tesseract.js/**/*",
       "./node_modules/tesseract.js-core/**/*",
