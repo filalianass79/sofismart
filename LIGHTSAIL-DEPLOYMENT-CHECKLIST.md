@@ -16,7 +16,7 @@
 - [ ] `AUTH_SECRET` / `NEXTAUTH_SECRET` uniques (32+ chars)
 - [ ] `POSTGRES_PASSWORD` fort
 - [ ] `SEED_ADMIN_PASSWORD` défini (12+ chars)
-- [ ] `APP_URL` = `https://app.sofismart.ma`
+- [ ] `APP_URL` = `https://app.sofismart.com`
 - [ ] `QR_SECRET` défini
 - [ ] Aucune valeur `CHANGE_ME` restante
 
@@ -38,7 +38,7 @@
 
 ## Nginx & SSL
 
-- [ ] DNS `app.sofismart.ma` → IP Lightsail
+- [ ] DNS `app.sofismart.com` → IP Lightsail (`15.237.23.163`)
 - [ ] Nginx configuré (`nginx/sofismart.conf`)
 - [ ] Certbot SSL actif
 - [ ] Redirection HTTP → HTTPS

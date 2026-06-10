@@ -1,5 +1,7 @@
 # SOFISMART — Déploiement AWS Lightsail (Ubuntu + Docker)
 
+> **Débutant ?** Commencez par **[GUIDE-DEPLOIEMENT-DEBUTANT.md](./GUIDE-DEPLOIEMENT-DEBUTANT.md)** — guide pas à pas avec votre IP `15.237.23.163` et le domaine `app.sofismart.com`.
+
 Guide complet pour héberger SOFISMART en production sur un serveur **AWS Lightsail** avec Docker, PostgreSQL, Nginx et HTTPS.
 
 ---
