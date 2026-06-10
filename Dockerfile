@@ -4,7 +4,8 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl wget
 COPY package.json package-lock.json* ./
-RUN npm ci
+# postinstall (prisma generate) needs prisma/schema — run in builder stage instead
+RUN npm ci --ignore-scripts
 
 FROM node:20-alpine AS builder
 WORKDIR /app
