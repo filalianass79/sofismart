@@ -56,11 +56,11 @@ done
 
 # --- Migrations (image builder = Prisma complet) ---
 echo ">> Migrations base de données..."
-$COMPOSE_MIGRATE run --rm migrator npx prisma migrate deploy
+$COMPOSE_MIGRATE run --rm --build migrator npx prisma migrate deploy
 
 if grep -q "RUN_SEED_ON_START=true" "$ENV_FILE"; then
   echo ">> Seed admin initial..."
-  $COMPOSE_MIGRATE run --rm migrator npx prisma db seed
+  $COMPOSE_MIGRATE run --rm --build migrator npx prisma db seed
 fi
 
 # --- Application ---

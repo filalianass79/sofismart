@@ -45,13 +45,16 @@ export async function seedRbac(prisma: PrismaClient) {
       ),
     ];
 
-    for (const key of keys) {
+    const rolePerms = keys.flatMap((key) => {
       const pid = permByKey.get(key);
-      if (!pid) continue;
-      await prisma.rolePermission.upsert({
-        where: { roleId_permissionId: { roleId: role.id, permissionId: pid } },
-        update: { allowed: true },
-        create: { roleId: role.id, permissionId: pid, allowed: true },
+      if (!pid) return [];
+      return [{ roleId: role.id, permissionId: pid, allowed: true }];
+    });
+
+    if (rolePerms.length > 0) {
+      await prisma.rolePermission.createMany({
+        data: rolePerms,
+        skipDuplicates: true,
       });
     }
   }

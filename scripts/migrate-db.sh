@@ -14,6 +14,9 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
+echo ">> Build image migrator (code à jour)"
+$COMPOSE build migrator
+
 echo ">> prisma migrate deploy"
 $COMPOSE run --rm migrator npx prisma migrate deploy
 
