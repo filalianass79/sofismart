@@ -28,6 +28,7 @@
     "docker:prod": "docker compose --env-file .env.production up -d --build",
     "docker:dev:db": "docker compose -f docker-compose.dev.yml up -d",
     "lightsail:deploy": "bash scripts/deploy-production.sh",
+    "lightsail:migrate": "bash scripts/migrate-db.sh",
     "lightsail:backup": "bash scripts/backup-db.sh",
     "lightsail:restore": "bash scripts/restore-db.sh",
     "aws:setup": "powershell -ExecutionPolicy Bypass -File deploy/aws/setup-aws.ps1 -Phase all",

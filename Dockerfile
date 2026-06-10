@@ -26,22 +26,6 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
-COPY --from=builder /app/package.json ./package.json
-
-# Prisma CLI complet (migrations + seed) — évite les fichiers .wasm manquants
-RUN npm install \
-    prisma@7.8.0 \
-    tsx@4.22.0 \
-    bcryptjs@3.0.3 \
-    dotenv@17.4.2 \
-    @prisma/adapter-pg@7.8.0 \
-    pg@8.20.0 \
-    --ignore-scripts --no-save \
-  && chown -R nextjs:nodejs /app/node_modules
-
 # OCR / PDF (serverExternalPackages — requis en runtime hors bundle Next)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/tesseract.js ./node_modules/tesseract.js
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/tesseract.js-core ./node_modules/tesseract.js-core
