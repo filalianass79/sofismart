@@ -2,7 +2,7 @@
 import { LoadingState, LoadingOverlay, LoadingButtonContent } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { CatalogImageUpload } from "@/components/settings/catalog-image-upload";
@@ -134,7 +134,7 @@ export function BrandsManager() {
                   <td className="px-4 py-3">
                     {b.logo ? (
                       <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-navy-950/10 bg-cream-50">
-                        <Image src={b.logo} alt="" fill className="object-contain p-1" />
+                        <UploadImage src={b.logo} alt="" fill className="object-contain p-1" />
                       </div>
                     ) : (
                       <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-navy-950/5 text-xs font-bold text-navy-400">

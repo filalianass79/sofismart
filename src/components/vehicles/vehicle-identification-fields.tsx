@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import type { UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
@@ -189,7 +189,7 @@ export function VehicleIdentificationFields({
         {selectedBrand?.logo && (
           <p className="mt-3 flex items-center gap-2 text-xs text-navy-500">
             <span className="relative block h-8 w-8 overflow-hidden rounded border border-navy-950/10 bg-white">
-              <Image src={selectedBrand.logo} alt="" fill className="object-contain p-0.5" />
+              <UploadImage src={selectedBrand.logo} alt="" fill className="object-contain p-0.5" />
             </span>
             {selectedBrand.label}
           </p>

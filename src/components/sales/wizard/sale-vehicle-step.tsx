@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import { Car } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading";
 import { ListFilterToolbar, FilterField, countActiveFilters } from "@/components/ui/list-filters";
@@ -176,7 +176,7 @@ export function SaleVehicleStep({ onVehicleSelected }: { onVehicleSelected: () =
                       )}
                     >
                       {v.mainPhoto ? (
-                        <Image src={v.mainPhoto} alt="" fill className="object-cover" />
+                        <UploadImage src={v.mainPhoto} alt="" fill className="object-cover" />
                       ) : (
                         <Car className={cn("h-7 w-7", active ? "text-gold-700" : "text-navy-400")} />
                       )}

@@ -14,6 +14,7 @@ const isPublic = (pathname: string) =>
   pathname.startsWith("/_next") ||
   pathname.startsWith("/favicon.ico") ||
   pathname.startsWith("/demo-documents") ||
+  pathname.startsWith("/uploads/") ||
   /\.(?:svg|png|jpg|jpeg|gif|webp|pdf)$/.test(pathname);
 
 const changePasswordPath = "/dashboard/security/change-password";

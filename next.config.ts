@@ -57,7 +57,10 @@ const nextConfig: NextConfig = {
           },
         ]
       : [],
-    unoptimized: process.env.NODE_ENV !== "production",
+    // Fichiers uploadés à chaud (Docker volume public/uploads) : pas d'optimiseur Next.js
+    unoptimized: process.env.UPLOAD_STORAGE !== "s3",
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "inline",
   },
   async rewrites() {
     if (process.env.UPLOAD_STORAGE === "s3" && s3PublicBase) {

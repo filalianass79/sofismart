@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/lib/utils";
@@ -38,7 +38,7 @@ export default async function VehicleDetailPage({ params }: Props) {
         <section className="flex gap-4">
           {v.brand.logo ? (
             <span className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-navy-950/10 bg-cream-50">
-              <Image src={v.brand.logo} alt="" fill className="object-contain p-1.5" />
+              <UploadImage src={v.brand.logo} alt="" fill className="object-contain p-1.5" />
             </span>
           ) : (
             <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-navy-950 to-navy-800 text-lg font-bold text-gold-300">

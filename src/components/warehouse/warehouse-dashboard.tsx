@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import Link from "next/link";
 import {
   Package,
@@ -301,7 +301,7 @@ export function WarehouseDashboard() {
               >
                 <div className="relative aspect-video bg-navy-950/5">
                   {v.photos[0]?.path ? (
-                    <Image src={v.photos[0].path} alt="" fill className="object-cover" />
+                    <UploadImage src={v.photos[0].path} alt="" fill className="object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-navy-400">
                       <Package className="h-10 w-10" />

@@ -2,7 +2,7 @@
 import { LoadingState, LoadingOverlay, LoadingButtonContent } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { CatalogImageUpload } from "@/components/settings/catalog-image-upload";
@@ -171,7 +171,7 @@ export function ModelsManager() {
                   <td className="px-4 py-3">
                     {m.photo ? (
                       <span className="relative block h-10 w-14 overflow-hidden rounded-md border border-navy-950/10">
-                        <Image src={m.photo} alt="" fill className="object-cover" />
+                        <UploadImage src={m.photo} alt="" fill className="object-cover" />
                       </span>
                     ) : (
                       <span className="text-navy-400">—</span>

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import { cn } from "@/lib/utils";
 import type { CompanyDocumentBlock, DocumentChecklistItem, DocumentMetaItem } from "@/lib/documents/types";
 
@@ -43,7 +43,7 @@ export function DocumentHeader({
         <div className="flex gap-4">
           {company.logoUrl ? (
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-navy-950/10">
-              <Image src={company.logoUrl} alt="" fill className="object-contain p-1" unoptimized />
+              <UploadImage src={company.logoUrl} alt="" fill className="object-contain p-1" />
             </div>
           ) : (
             <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-navy-950 text-xs font-bold text-gold-300">

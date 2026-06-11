@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import { ImagePlus, X } from "lucide-react";
 import { SofiSpinner } from "@/components/ui/loading";
 import { useState } from "react";
@@ -44,7 +44,7 @@ export function CatalogImageUpload({
               aspect === "square" ? "h-20 w-20" : "h-20 w-28"
             )}
           >
-            <Image src={value} alt="" fill className={aspect === "square" ? "object-contain p-1" : "object-cover"} />
+            <UploadImage src={value} alt="" fill className={aspect === "square" ? "object-contain p-1" : "object-cover"} />
             <button
               type="button"
               onClick={() => onChange(null)}

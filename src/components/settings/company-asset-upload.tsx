@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadImage } from "@/components/ui/upload-image";
 import { Download, ImagePlus, X } from "lucide-react";
 import { useState } from "react";
 import { SofiSpinner } from "@/components/ui/loading";
@@ -59,7 +59,7 @@ export function CompanyAssetUpload({
       <section className="mt-2 flex flex-wrap items-start gap-3" aria-label={label}>
         {value ? (
           <div className={cn("relative overflow-hidden rounded-lg border border-navy-950/15 bg-white shadow-sm", previewClass)}>
-            <Image src={value} alt="" fill className="object-contain p-1" />
+            <UploadImage src={value} alt="" fill className="object-contain p-1" />
             <div className="absolute right-1 top-1 flex gap-1">
               <a
                 href={value}
