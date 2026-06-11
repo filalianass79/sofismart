@@ -328,9 +328,43 @@ enum InvoiceExtractionStatus {
 
 enum ExtractedFieldStatus {
   DETECTED
+  OCR_DETECTED
+  AI_DETECTED
+  NEEDS_REVIEW
   VERIFIED
   CORRECTED
+  USER_CORRECTED
+  VALIDATED
   IGNORED
+}
+
+enum InvoiceOcrStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+enum InvoiceAiStatus {
+  PENDING
+  DISABLED
+  PROCESSING
+  SUCCESS
+  FAILED
+  FALLBACK_REGEX
+}
+
+enum InvoiceExtractionRunType {
+  OCR
+  AI
+  REGEX
+}
+
+enum InvoiceExtractionRunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
 }
 
 enum InvoiceLineType {
@@ -1020,7 +1054,14 @@ model InvoiceImport {
   pageCount         Int                     @default(1)
   status            InvoiceImportStatus     @default(PENDING)
   extractionStatus  InvoiceExtractionStatus @default(PENDING)
+  ocrStatus         InvoiceOcrStatus        @default(PENDING)
+  aiStatus          InvoiceAiStatus         @default(PENDING)
   rawOcrText        String?                 @db.Text
+  cleanedOcrText    String?                 @db.Text
+  ocrJson           Json?
+  aiRawResponse     String?                 @db.Text
+  aiStructuredData  Json?
+  validationErrors  Json?
   structuredData    Json?
   confidenceScore   Decimal?                @db.Decimal(5, 4)
   purchaseId        String?
@@ -1031,10 +1072,30 @@ model InvoiceImport {
   updatedAt         DateTime                @updatedAt
   extractedFields   InvoiceExtractedField[]
   lineItems         InvoiceLineItem[]
+  extractionRuns    InvoiceExtractionRun[]
   documents         Document[]
 
   @@index([status, createdAt])
   @@index([uploadedById])
+}
+
+model InvoiceExtractionRun {
+  id              String                     @id @default(cuid())
+  invoiceImportId String
+  invoiceImport   InvoiceImport              @relation(fields: [invoiceImportId], references: [id], onDelete: Cascade)
+  type            InvoiceExtractionRunType
+  provider        String?
+  model           String?
+  status          InvoiceExtractionRunStatus @default(PENDING)
+  inputTokens     Int?
+  outputTokens    Int?
+  estimatedCost   Decimal?                   @db.Decimal(10, 6)
+  errorMessage    String?                    @db.Text
+  startedAt       DateTime                   @default(now())
+  finishedAt      DateTime?
+  createdAt       DateTime                   @default(now())
+
+  @@index([invoiceImportId, createdAt])
 }
 
 model InvoiceExtractedField {
@@ -1046,6 +1107,7 @@ model InvoiceExtractedField {
   extractedValue  String?              @db.Text
   correctedValue  String?              @db.Text
   confidence      Decimal              @default(0) @db.Decimal(5, 4)
+  source          String?              @default("REGEX_DETECTED")
   sourceText      String?              @db.Text
   boundingBox     Json?
   status          ExtractedFieldStatus @default(DETECTED)

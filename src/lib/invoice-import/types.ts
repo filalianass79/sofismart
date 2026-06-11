@@ -93,6 +93,25 @@ export type VehicleMatchResult = {
   score: number;
 };
 
+export type OcrWordBlock = {
+  text: string;
+  confidence: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type OcrResult = {
+  rawText: string;
+  cleanedText: string;
+  pageCount: number;
+  words: OcrWordBlock[];
+  blocks: { text: string; confidence: number }[];
+  ocrScore: number;
+  ocrJson: Record<string, unknown>;
+};
+
 export type InvoiceImportPayload = {
   importId: string;
   fileUrl: string;
@@ -101,11 +120,29 @@ export type InvoiceImportPayload = {
   pageCount: number;
   status: string;
   extractionStatus: string;
+  ocrStatus: string;
+  aiStatus: string;
   confidenceScore: number;
   rawOcrText: string | null;
+  cleanedOcrText: string | null;
+  aiStructuredData: unknown | null;
+  validationErrors: string[] | null;
+  extractionRuns: {
+    id: string;
+    type: string;
+    provider: string | null;
+    model: string | null;
+    status: string;
+    estimatedCost: number | null;
+    startedAt: string;
+    finishedAt: string | null;
+  }[];
   structured: StructuredInvoiceData;
   wizardDraft: Partial<PurchaseWizardValues>;
   supplierMatches: SupplierMatchResult[];
   vehicleMatches: VehicleMatchResult[];
   purchaseId: string | null;
+  aiEnabled: boolean;
+  aiProvider?: string;
+  aiModel?: string;
 };

@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 export function FieldConfidenceBadge({ confidence }: { confidence: number }) {
   const level =
-    confidence >= 0.75 ? "high" : confidence >= 0.5 ? "medium" : confidence > 0 ? "low" : "none";
+    confidence >= 0.85 ? "high" : confidence >= 0.6 ? "medium" : confidence > 0 ? "low" : "none";
   const labels = {
     high: "Confiance élevée",
     medium: "À vérifier",

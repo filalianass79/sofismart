@@ -5,11 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  Brain,
   CheckCircle2,
+  Code2,
+  FileText,
   FileUp,
   Loader2,
   RefreshCw,
   Save,
+  ScanText,
 } from "lucide-react";
 import { SofiSpinner } from "@/components/ui/loading";
 import { formatMoney } from "@/lib/utils";
@@ -85,6 +89,8 @@ export function PurchaseInvoiceImportWorkspace({
   const [wizard, setWizard] = useState<PurchaseWizardValues>(defaultWizard);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [debugPanel, setDebugPanel] = useState<"none" | "ocr" | "ai">("none");
+  const [debugContent, setDebugContent] = useState<string>("");
 
   const loadImport = useCallback(async (id: string) => {
     const res = await fetch(`/api/purchases/invoice-import/${id}`);
@@ -131,6 +137,56 @@ export function PurchaseInvoiceImportWorkspace({
     } finally {
       setSaving(false);
     }
+  }
+
+  async function runOcr() {
+    if (!importId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/purchases/invoice-import/${importId}/run-ocr`, { method: "POST" });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? "Erreur OCR");
+      setPayload(j);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function runAi() {
+    if (!importId) return;
+    if (!payload?.aiEnabled && !confirm("L'extraction IA n'est pas configurée. Continuer quand même ?")) return;
+    if (!confirm("Relancer l'extraction IA ? (consommation API possible)")) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/purchases/invoice-import/${importId}/run-ai-extraction`, { method: "POST" });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? "Erreur IA");
+      setPayload(j);
+      setWizard(mergeWizard(j.wizardDraft));
+      if (j.supplierMatches?.[0]) {
+        setWizard((w) => ({ ...w, supplierId: j.supplierMatches[0].id }));
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function showDebug(kind: "ocr" | "ai") {
+    if (!importId) return;
+    const endpoint =
+      kind === "ocr"
+        ? `/api/purchases/invoice-import/${importId}/ocr-text`
+        : `/api/purchases/invoice-import/${importId}/ai-json`;
+    const res = await fetch(endpoint);
+    const j = await res.json();
+    setDebugPanel(kind);
+    setDebugContent(JSON.stringify(j, null, 2));
   }
 
   async function saveDraft() {
@@ -190,17 +246,43 @@ export function PurchaseInvoiceImportWorkspace({
             ← Achats
           </Link>
           <h2 className="font-display text-2xl text-navy-950">Import facture d&apos;achat</h2>
-          <p className="text-sm text-navy-600">PDF ou image — extraction automatique puis validation</p>
+          <p className="text-sm text-navy-600">
+            OCR + IA — extraction structurée puis validation humaine obligatoire
+          </p>
         </div>
         {importId && canEdit && (
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={runOcr}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg border border-navy-950/15 px-3 py-2 text-sm font-medium"
+              title="Relancer OCR uniquement"
+            >
+              <ScanText className="h-4 w-4" /> OCR
+            </button>
+            <button
+              type="button"
+              onClick={runAi}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg border border-violet-400/40 bg-violet-500/10 px-3 py-2 text-sm font-medium text-violet-900"
+              title="Relancer extraction IA"
+            >
+              <Brain className="h-4 w-4" /> IA
+            </button>
             <button
               type="button"
               onClick={reprocess}
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-lg border border-navy-950/15 px-3 py-2 text-sm font-medium"
             >
-              <RefreshCw className="h-4 w-4" /> Relancer extraction
+              <RefreshCw className="h-4 w-4" /> Pipeline complet
+            </button>
+            <button type="button" onClick={() => showDebug("ocr")} className="inline-flex items-center gap-1 rounded-lg border px-2 py-2 text-xs" title="Texte OCR">
+              <FileText className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={() => showDebug("ai")} className="inline-flex items-center gap-1 rounded-lg border px-2 py-2 text-xs" title="JSON IA">
+              <Code2 className="h-4 w-4" />
             </button>
             <button
               type="button"
@@ -305,8 +387,57 @@ export function PurchaseInvoiceImportWorkspace({
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-navy-500">
-                    Statut : {payload.extractionStatus} — {payload.pageCount} page(s)
+                    OCR : {payload.ocrStatus} — IA : {payload.aiStatus}
+                    {payload.aiEnabled
+                      ? ` (${payload.aiProvider ?? "ia"} / ${payload.aiModel ?? "—"})`
+                      : " (IA désactivée — configurez AI_API_KEY)"}{" "}
+                    — {payload.pageCount} page(s)
                   </p>
+                  {payload.validationErrors && payload.validationErrors.length > 0 && (
+                    <ul className="mt-2 space-y-1 text-xs text-amber-800">
+                      {payload.validationErrors.map((w) => (
+                        <li key={w}>⚠ {w}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {payload.extractionRuns.length > 0 && (
+                    <div className="mt-3 overflow-x-auto">
+                      <table className="w-full text-left text-[10px] text-navy-600">
+                        <thead>
+                          <tr>
+                            <th className="pr-2">Type</th>
+                            <th className="pr-2">Provider</th>
+                            <th className="pr-2">Statut</th>
+                            <th>Coût est.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payload.extractionRuns.slice(0, 5).map((r) => (
+                            <tr key={r.id}>
+                              <td className="pr-2 font-medium">{r.type}</td>
+                              <td className="pr-2">{r.provider ?? "—"}</td>
+                              <td className="pr-2">{r.status}</td>
+                              <td>{r.estimatedCost != null ? `${(r.estimatedCost * 100).toFixed(2)} cts` : "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {debugPanel !== "none" && (
+                <section className="rounded-xl border border-navy-950/10 bg-navy-950 p-3 text-xs text-emerald-100">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-semibold uppercase tracking-wide">
+                      {debugPanel === "ocr" ? "Texte OCR" : "JSON IA"}
+                    </span>
+                    <button type="button" onClick={() => setDebugPanel("none")} className="text-white/70 hover:text-white">
+                      Fermer
+                    </button>
+                  </div>
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap">{debugContent}</pre>
                 </section>
               )}
 

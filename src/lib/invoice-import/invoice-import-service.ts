@@ -9,7 +9,7 @@ import {
   sanitizeOriginalName,
   secureStoredFilename,
 } from "@/lib/upload-security";
-import { extractTextFromBuffer, isInvoiceImportMime } from "./ocr-service";
+import { isInvoiceImportMime } from "./ocr-service";
 import {
   invoiceImportDir,
   invoiceImportPublicUrl,
@@ -19,6 +19,13 @@ import { extractStructuredFromText } from "./invoice-extraction-service";
 import { flattenFieldsForDb, mapToWizardDraft } from "./invoice-field-mapper";
 import { matchSuppliers } from "./supplier-matcher";
 import { matchVehicles } from "./vehicle-matcher";
+import { runInvoiceExtractionPipeline } from "./pipeline";
+import { runOCR } from "./ocr-service";
+import { getAiProviderInfo, isAiExtractionEnabled, runAiExtraction } from "./ai-invoice-extraction-service";
+import { mapAiToStructured } from "./ai-mapper";
+import { mergeAiConfidence } from "./invoice-confidence-service";
+import { updateExtractedFields, getFieldReviewSummary } from "./invoice-human-review-service";
+import type { FieldCorrection } from "./invoice-human-review-service";
 import type { InvoiceImportPayload, StructuredInvoiceData } from "./types";
 import type { PurchaseWizardValues } from "@/lib/validations/purchase";
 
@@ -32,7 +39,7 @@ function assertInvoiceImportClient() {
   }
 }
 
-export async function createInvoiceImportFromFile(
+export async function uploadInvoiceFile(
   file: File,
   uploadedById: string | null,
 ): Promise<string> {
@@ -44,8 +51,7 @@ export async function createInvoiceImportFromFile(
   const dir = invoiceImportDir();
   await mkdir(dir, { recursive: true });
   const stored = secureStoredFilename(file.name, file.type);
-  const fullPath = path.join(dir, stored);
-  await writeFile(fullPath, buffer);
+  await writeFile(path.join(dir, stored), buffer);
   const publicPath = invoiceImportPublicUrl(stored);
 
   const record = await prisma.invoiceImport.create({
@@ -54,57 +60,22 @@ export async function createInvoiceImportFromFile(
       fileUrl: publicPath,
       fileMimeType: file.type,
       fileSize: buffer.length,
-      status: "PROCESSING",
+      status: "PENDING",
       extractionStatus: "PENDING",
+      ocrStatus: "PENDING",
+      aiStatus: isAiExtractionEnabled() ? "PENDING" : "DISABLED",
       uploadedById,
     },
   });
 
-  try {
-    const { text, pageCount } = await extractTextFromBuffer(buffer, file.type);
-    const structured = extractStructuredFromText(text);
-    const supplierMatches = await matchSuppliers(structured);
-    const vehicleMatches = await matchVehicles(structured);
-
-    const extractionStatus =
-      structured.globalConfidence >= 0.55 ? "SUCCESS" : text.length > 50 ? "PARTIAL" : "FAILED";
-
-    await prisma.invoiceImport.update({
-      where: { id: record.id },
-      data: {
-        rawOcrText: text.slice(0, 500_000),
-        structuredData: structured as object,
-        confidenceScore: structured.globalConfidence,
-        pageCount,
-        status: "EXTRACTED",
-        extractionStatus,
-      },
-    });
-
-    await saveExtractedFields(record.id, structured);
-
-    const jsonPath = path.join(dir, `${record.id}-ocr.json`);
-    await writeFile(jsonPath, JSON.stringify({ structured, supplierMatches, vehicleMatches }, null, 2));
-    await prisma.invoiceImport.update({
-      where: { id: record.id },
-      data: { structuredData: { ...(structured as object), supplierMatches, vehicleMatches } },
-    });
-  } catch (e) {
-    await prisma.invoiceImport.update({
-      where: { id: record.id },
-      data: {
-        status: "FAILED",
-        extractionStatus: "FAILED",
-        rawOcrText: e instanceof Error ? e.message : "Erreur extraction",
-      },
-    });
-    throw e;
-  }
-
   return record.id;
 }
 
-async function saveExtractedFields(importId: string, structured: StructuredInvoiceData) {
+async function saveExtractedFields(
+  importId: string,
+  structured: StructuredInvoiceData,
+  source: "AI_DETECTED" | "REGEX_DETECTED" = "REGEX_DETECTED",
+) {
   await prisma.invoiceExtractedField.deleteMany({ where: { invoiceImportId: importId } });
   await prisma.invoiceLineItem.deleteMany({ where: { invoiceImportId: importId } });
 
@@ -118,6 +89,8 @@ async function saveExtractedFields(importId: string, structured: StructuredInvoi
         extractedValue: f.extractedValue,
         confidence: f.confidence,
         sourceText: f.sourceText ?? null,
+        source,
+        status: f.confidence >= 0.85 ? "AI_DETECTED" : f.confidence >= 0.6 ? "NEEDS_REVIEW" : "NEEDS_REVIEW",
       })),
     });
   }
@@ -142,35 +115,123 @@ async function saveExtractedFields(importId: string, structured: StructuredInvoi
   }
 }
 
-export async function reprocessInvoiceImport(importId: string): Promise<void> {
+export async function createInvoiceImportFromFile(
+  file: File,
+  uploadedById: string | null,
+): Promise<string> {
+  const importId = await uploadInvoiceFile(file, uploadedById);
   const imp = await prisma.invoiceImport.findUnique({ where: { id: importId } });
   if (!imp) throw new Error("Import introuvable");
 
-  const fullPath = resolveInvoiceImportFilePath(imp.fileUrl);
-  const buffer = await readFile(fullPath);
-  const { text, pageCount } = await extractTextFromBuffer(buffer, imp.fileMimeType);
-  const structured = extractStructuredFromText(text);
-  const supplierMatches = await matchSuppliers(structured);
-  const vehicleMatches = await matchVehicles(structured);
+  const buffer = await readFile(resolveInvoiceImportFilePath(imp.fileUrl));
+  try {
+    const result = await runInvoiceExtractionPipeline(importId, buffer, imp.fileMimeType, uploadedById);
+    await saveExtractedFields(importId, result.structured, result.aiUsed ? "AI_DETECTED" : "REGEX_DETECTED");
+
+    const dir = invoiceImportDir();
+    const jsonPath = path.join(dir, `${importId}-extraction.json`);
+    await writeFile(
+      jsonPath,
+      JSON.stringify(
+        {
+          structured: result.structured,
+          supplierMatches: result.supplierMatches,
+          vehicleMatches: result.vehicleMatches,
+          aiUsed: result.aiUsed,
+          validationErrors: result.validationErrors,
+        },
+        null,
+        2,
+      ),
+    );
+  } catch (e) {
+    await prisma.invoiceImport.update({
+      where: { id: importId },
+      data: {
+        status: "FAILED",
+        extractionStatus: "FAILED",
+        rawOcrText: e instanceof Error ? e.message : "Erreur extraction",
+      },
+    });
+    throw e;
+  }
+
+  return importId;
+}
+
+export async function runOcrOnly(importId: string): Promise<void> {
+  const imp = await prisma.invoiceImport.findUnique({ where: { id: importId } });
+  if (!imp) throw new Error("Import introuvable");
+
+  const buffer = await readFile(resolveInvoiceImportFilePath(imp.fileUrl));
+  const ocrResult = await runOCR(buffer, imp.fileMimeType);
 
   await prisma.invoiceImport.update({
     where: { id: importId },
     data: {
-      rawOcrText: text.slice(0, 500_000),
-      structuredData: { ...(structured as object), supplierMatches, vehicleMatches },
-      confidenceScore: structured.globalConfidence,
-      pageCount,
-      status: "EXTRACTED",
-      extractionStatus: structured.globalConfidence >= 0.55 ? "SUCCESS" : "PARTIAL",
+      ocrStatus: "SUCCESS",
+      rawOcrText: ocrResult.rawText.slice(0, 500_000),
+      cleanedOcrText: ocrResult.cleanedText.slice(0, 500_000),
+      ocrJson: ocrResult.ocrJson as object,
+      pageCount: ocrResult.pageCount,
     },
   });
-  await saveExtractedFields(importId, structured);
+}
+
+export async function runAiOnly(importId: string, userId: string | null): Promise<void> {
+  const imp = await prisma.invoiceImport.findUnique({ where: { id: importId } });
+  if (!imp) throw new Error("Import introuvable");
+
+  const cleaned = imp.cleanedOcrText ?? imp.rawOcrText ?? "";
+  if (!cleaned.trim()) throw new Error("OCR requis avant extraction IA");
+
+  await prisma.invoiceImport.update({ where: { id: importId }, data: { aiStatus: "PROCESSING" } });
+
+  const ai = await runAiExtraction(
+    importId,
+    { rawOcrText: imp.rawOcrText ?? "", cleanedOcrText: cleaned },
+    userId,
+  );
+
+  const structured = mapAiToStructured(ai.data);
+  const merged = mergeAiConfidence(structured, ai.data);
+  const supplierMatches = await matchSuppliers(merged);
+  const vehicleMatches = await matchVehicles(merged);
+
+  await prisma.invoiceImport.update({
+    where: { id: importId },
+    data: {
+      aiStatus: "SUCCESS",
+      aiRawResponse: ai.rawResponse.slice(0, 500_000),
+      aiStructuredData: ai.data as object,
+      validationErrors: ai.validationErrors.length ? ai.validationErrors : undefined,
+      structuredData: { ...(merged as object), supplierMatches, vehicleMatches, aiUsed: true },
+      confidenceScore: merged.globalConfidence,
+      status: "EXTRACTED",
+      extractionStatus: merged.globalConfidence >= 0.55 ? "SUCCESS" : "PARTIAL",
+    },
+  });
+
+  await saveExtractedFields(importId, merged, "AI_DETECTED");
+}
+
+export async function reprocessInvoiceImport(importId: string, userId: string | null): Promise<void> {
+  const imp = await prisma.invoiceImport.findUnique({ where: { id: importId } });
+  if (!imp) throw new Error("Import introuvable");
+
+  const buffer = await readFile(resolveInvoiceImportFilePath(imp.fileUrl));
+  const result = await runInvoiceExtractionPipeline(importId, buffer, imp.fileMimeType, userId);
+  await saveExtractedFields(importId, result.structured, result.aiUsed ? "AI_DETECTED" : "REGEX_DETECTED");
 }
 
 export async function getInvoiceImportPayload(importId: string): Promise<InvoiceImportPayload> {
   const imp = await prisma.invoiceImport.findUnique({
     where: { id: importId },
-    include: { extractedFields: true, lineItems: { orderBy: { sortOrder: "asc" } } },
+    include: {
+      extractedFields: true,
+      lineItems: { orderBy: { sortOrder: "asc" } },
+      extractionRuns: { orderBy: { createdAt: "desc" }, take: 10 },
+    },
   });
   if (!imp) throw new Error("Import introuvable");
 
@@ -195,8 +256,7 @@ export async function getInvoiceImportPayload(importId: string): Promise<Invoice
     }));
   }
 
-  const supplierMatches =
-    structured.supplierMatches ?? (await matchSuppliers(structured));
+  const supplierMatches = structured.supplierMatches ?? (await matchSuppliers(structured));
   const vehicleMatches = structured.vehicleMatches ?? (await matchVehicles(structured));
 
   const wizardDraft = await mapToWizardDraft(structured, {
@@ -204,6 +264,12 @@ export async function getInvoiceImportPayload(importId: string): Promise<Invoice
     brandId: undefined,
     modelId: undefined,
   });
+
+  const validationErrors = Array.isArray(imp.validationErrors)
+    ? (imp.validationErrors as string[])
+    : imp.validationErrors
+      ? [String(imp.validationErrors)]
+      : null;
 
   return {
     importId: imp.id,
@@ -213,14 +279,38 @@ export async function getInvoiceImportPayload(importId: string): Promise<Invoice
     pageCount: imp.pageCount,
     status: imp.status,
     extractionStatus: imp.extractionStatus,
+    ocrStatus: imp.ocrStatus,
+    aiStatus: imp.aiStatus,
     confidenceScore: Number(imp.confidenceScore ?? structured.globalConfidence ?? 0),
     rawOcrText: imp.rawOcrText,
+    cleanedOcrText: imp.cleanedOcrText,
+    aiStructuredData: imp.aiStructuredData,
+    validationErrors,
+    extractionRuns: imp.extractionRuns.map((r) => ({
+      id: r.id,
+      type: r.type,
+      provider: r.provider,
+      model: r.model,
+      status: r.status,
+      estimatedCost: r.estimatedCost ? Number(r.estimatedCost) : null,
+      startedAt: r.startedAt.toISOString(),
+      finishedAt: r.finishedAt?.toISOString() ?? null,
+    })),
     structured,
     wizardDraft,
     supplierMatches,
     vehicleMatches,
     purchaseId: imp.purchaseId,
+    ...(() => {
+      const ai = getAiProviderInfo();
+      return { aiEnabled: ai.enabled, aiProvider: ai.activeProvider, aiModel: ai.activeModel };
+    })(),
   };
+}
+
+export async function updateImportFields(importId: string, corrections: FieldCorrection[]) {
+  await updateExtractedFields(importId, corrections);
+  return getFieldReviewSummary(importId);
 }
 
 export async function saveDraftFromImport(
@@ -334,4 +424,4 @@ async function attachInvoiceFileToPurchase(importId: string, purchaseId: string)
   });
 }
 
-export { isInvoiceImportMime };
+export { isInvoiceImportMime, getFieldReviewSummary };
