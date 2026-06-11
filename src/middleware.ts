@@ -28,11 +28,27 @@ export async function middleware(req: NextRequest) {
     ""
   ).startsWith("https://");
 
-  const token = await getToken({
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const cookieName = useSecureCookies
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+
+  let token = await getToken({
     req,
-    secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+    secret,
     secureCookie: useSecureCookies,
+    cookieName,
   });
+
+  // Fallback si cookie non sécurisé encore présent (tests HTTP → HTTPS)
+  if (!token && useSecureCookies) {
+    token = await getToken({
+      req,
+      secret,
+      secureCookie: false,
+      cookieName: "authjs.session-token",
+    });
+  }
 
   if (!token) {
     const url = new URL("/login", req.nextUrl.origin);

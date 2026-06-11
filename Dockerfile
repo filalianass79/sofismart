@@ -13,6 +13,15 @@ RUN apk add --no-cache libc6-compat openssl wget
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Middleware Next.js lit AUTH_SECRET au build — requis pour valider les cookies JWT
+ARG AUTH_SECRET
+ARG NEXTAUTH_SECRET
+ARG NEXTAUTH_URL
+ARG APP_URL
+ENV AUTH_SECRET=$AUTH_SECRET
+ENV NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+ENV NEXTAUTH_URL=$NEXTAUTH_URL
+ENV APP_URL=$APP_URL
 RUN npx prisma generate
 RUN npm run build
 

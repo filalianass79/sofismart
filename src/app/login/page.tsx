@@ -1,18 +1,7 @@
 import { Suspense } from "react";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
-import { getDefaultRedirectForRole } from "@/lib/auth/default-redirect";
 
 export default async function LoginPage() {
-  const session = await auth();
-  if (session) {
-    const roleCode =
-      (session.user as { roleCode?: string }).roleCode ??
-      (session.user as { role?: string }).role;
-    redirect(getDefaultRedirectForRole(roleCode));
-  }
-
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-navy-950 px-4">
       <div
