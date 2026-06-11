@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import type { JWT } from "next-auth/jwt";
 
 const isPublic = (pathname: string) =>
   pathname.startsWith("/login") ||
@@ -17,30 +18,45 @@ const isPublic = (pathname: string) =>
 
 const changePasswordPath = "/dashboard/security/change-password";
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  if (isPublic(pathname)) return NextResponse.next();
+/** HTTPS derrière Nginx : ne pas s'appuyer uniquement sur les variables build-time. */
+function isHttpsRequest(req: NextRequest): boolean {
+  if (req.nextUrl.protocol === "https:") return true;
+  const forwarded = req.headers.get("x-forwarded-proto");
+  return forwarded?.split(",")[0]?.trim() === "https";
+}
 
-  const useSecureCookies = (
-    process.env.NEXTAUTH_URL ??
-    process.env.AUTH_URL ??
-    process.env.APP_URL ??
-    ""
-  ).startsWith("https://");
+/**
+ * Redirection relative (clone de nextUrl) pour éviter ERR_TOO_MANY_REDIRECTS
+ * quand l'app est derrière un reverse proxy SSL (http interne → https public).
+ */
+function redirectTo(req: NextRequest, pathname: string, params?: Record<string, string>) {
+  const url = req.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = "";
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+  }
+  return NextResponse.redirect(url);
+}
 
+async function readSessionToken(req: NextRequest): Promise<JWT | null> {
   const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
-  const cookieName = useSecureCookies
-    ? "__Secure-authjs.session-token"
-    : "authjs.session-token";
+  if (!secret) return null;
+
+  const useSecureCookies = isHttpsRequest(req);
 
   let token = await getToken({
     req,
     secret,
     secureCookie: useSecureCookies,
-    cookieName,
+    cookieName: useSecureCookies
+      ? "__Secure-authjs.session-token"
+      : "authjs.session-token",
   });
 
-  // Fallback si cookie non sécurisé encore présent (tests HTTP → HTTPS)
+  // Fallback si cookie non sécurisé encore présent (migration HTTP → HTTPS)
   if (!token && useSecureCookies) {
     token = await getToken({
       req,
@@ -50,14 +66,25 @@ export async function middleware(req: NextRequest) {
     });
   }
 
+  return token;
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  if (isPublic(pathname)) return NextResponse.next();
+
+  const token = await readSessionToken(req);
+
   if (!token) {
-    const url = new URL("/login", req.nextUrl.origin);
-    url.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(url);
+    return redirectTo(req, "/login", { callbackUrl: pathname });
   }
 
-  if (token.passwordMustChange && !pathname.startsWith(changePasswordPath) && !pathname.startsWith("/api/me")) {
-    return NextResponse.redirect(new URL(changePasswordPath, req.nextUrl.origin));
+  if (
+    token.passwordMustChange &&
+    !pathname.startsWith(changePasswordPath) &&
+    !pathname.startsWith("/api/me")
+  ) {
+    return redirectTo(req, changePasswordPath);
   }
 
   return NextResponse.next();
