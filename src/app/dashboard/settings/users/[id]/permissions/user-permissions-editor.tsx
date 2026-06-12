@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PermissionMatrix } from "@/components/hr/permission-matrix";
 import { LoadingButtonContent } from "@/components/ui/loading";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type Perm = { id: string; module: string; action: string };
 
@@ -40,6 +41,7 @@ export function UserPermissionsEditor({
       }),
     });
     setSaving(false);
+    scrollPageToTop();
     if (onSaved) onSaved();
     else router.refresh();
   }

@@ -10,6 +10,7 @@ import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
 import type { DepotInput } from "@/lib/validations/depot";
 import type { DepotStatus, DepotType } from "@/generated/prisma/enums";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type Manager = { id: string; name: string | null; email: string };
 
@@ -126,6 +127,7 @@ export function DepotsManager({ managers }: { managers: Manager[] }) {
                 onSuccess={() => {
                   closeForm();
                   load();
+                  scrollPageToTop();
                 }}
                 onCancel={closeForm}
               />

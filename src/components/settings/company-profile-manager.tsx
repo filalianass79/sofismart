@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Building2, Save } from "lucide-react";
 import { LoadingOverlay, LoadingButtonContent, LoadingState } from "@/components/ui/loading";
 import { CompanyAssetUpload } from "@/components/settings/company-asset-upload";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type Profile = {
   legalName: string;
@@ -114,6 +115,7 @@ export function CompanyProfileManager() {
     if (res.ok) {
       setForm(await res.json());
       setSaved(true);
+      scrollPageToTop();
     } else {
       const j = await res.json().catch(() => ({}));
       setError(typeof j.error === "string" ? j.error : "Erreur lors de l'enregistrement");

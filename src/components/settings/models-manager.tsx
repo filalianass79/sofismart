@@ -6,6 +6,7 @@ import { UploadImage } from "@/components/ui/upload-image";
 import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { CatalogImageUpload } from "@/components/settings/catalog-image-upload";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 import type { BrandOption } from "@/lib/vehicle-catalog";
 
 type ModelRow = {
@@ -62,6 +63,7 @@ export function ModelsManager() {
     if (res.ok) {
       resetForm();
       load();
+      scrollPageToTop();
     } else {
       const j = await res.json().catch(() => ({}));
       alert(j.error ?? "Erreur");

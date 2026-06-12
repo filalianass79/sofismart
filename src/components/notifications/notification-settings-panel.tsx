@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 type Setting = {
   id: string;
   eventType: string;
@@ -42,6 +43,7 @@ export function NotificationSettingsPanel() {
       }),
     });
     load();
+    scrollPageToTop();
   }
 
   async function sendTest() {

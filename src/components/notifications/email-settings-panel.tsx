@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type EmailSetting = {
   id: string;
@@ -59,6 +60,7 @@ export function EmailSettingsPanel() {
       }),
     });
     load();
+    scrollPageToTop();
   }
 
   async function testConnection() {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type Template = {
   id: string;
@@ -54,6 +55,7 @@ export function EmailTemplateList() {
     });
     setSaved(true);
     load();
+    scrollPageToTop();
   }
 
   return (

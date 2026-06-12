@@ -8,6 +8,7 @@ import { Stepper } from "@/components/ui/stepper";
 import { WizardActions } from "@/components/ui/wizard-actions";
 import { LoadingOverlay } from "@/components/ui/loading";
 import { createUserSchema } from "@/lib/validations/user-account";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type FormValues = {
   employeeId: string;
@@ -94,8 +95,10 @@ export function UserWizard({
       return;
     }
     const j = await res.json();
-    if (j.temporaryPassword) setTempPassword(j.temporaryPassword);
-    else if (onSuccess) onSuccess();
+    if (j.temporaryPassword) {
+      setTempPassword(j.temporaryPassword);
+      scrollPageToTop();
+    } else if (onSuccess) onSuccess();
     else router.push(`/dashboard/settings/users/${j.id}`);
     router.refresh();
   }

@@ -9,6 +9,7 @@ import { EmployeeForm, type EmployeeFormData } from "@/components/hr/employee-fo
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
 import type { EmployeeJobFunction, EmployeeStatus } from "@/generated/prisma/enums";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type DepotOption = { id: string; name: string };
 
@@ -159,6 +160,7 @@ export function EmployeesManager({
                 onSuccess={() => {
                   closeForm();
                   load();
+                  scrollPageToTop();
                 }}
                 onCancel={closeForm}
               />

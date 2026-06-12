@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { RolePermissionsEditor } from "@/app/dashboard/settings/roles/[id]/permissions/role-permissions-editor";
 import { LoadingState, LoadingOverlay, LoadingButtonContent } from "@/components/ui/loading";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type RoleRow = {
   id: string;
@@ -64,6 +65,7 @@ export function RolesManager() {
     if (res.ok) {
       closePanels();
       load();
+      scrollPageToTop();
     } else {
       const j = await res.json().catch(() => ({}));
       alert((j as { error?: string }).error ?? "Erreur");

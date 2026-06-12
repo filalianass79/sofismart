@@ -11,6 +11,7 @@ import { UserPermissionsEditor } from "@/app/dashboard/settings/users/[id]/permi
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
 import type { AccountStatus } from "@/generated/prisma/enums";
+import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type RoleOption = { id: string; name: string; code: string };
 type EmployeeOption = {
@@ -154,6 +155,7 @@ export function UsersManager({
               onSuccess={() => {
                 closePanel();
                 load();
+                scrollPageToTop();
               }}
               onCancel={closePanel}
             />
