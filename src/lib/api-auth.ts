@@ -70,3 +70,31 @@ export async function requireVehicleCatalogAccess() {
   }
   return gate;
 }
+
+/** Sélection d'un dépôt dans les formulaires achat / véhicule / vente. */
+export async function requireDepotPickerAccess() {
+  const gate = await requireAuth();
+  if ("response" in gate) return gate;
+
+  const perms = gate.session.user.permissions?.length
+    ? new Set(gate.session.user.permissions)
+    : await loadUserPermissions(prisma, gate.session.user.id);
+
+  const allowed =
+    hasPermission(perms, "depots.view") ||
+    hasPermission(perms, "depots:*") ||
+    hasPermission(perms, "achats.create") ||
+    hasPermission(perms, "achats.edit") ||
+    hasPermission(perms, "achats.view") ||
+    hasPermission(perms, "vehicules.create") ||
+    hasPermission(perms, "vehicules.edit") ||
+    hasPermission(perms, "vehicles:*");
+
+  if (!allowed) {
+    const role = gate.session.user.role as UserRole;
+    if (!can(role, "depots:*") && !can(role, "purchases:*") && !can(role, "vehicles:*")) {
+      return { response: NextResponse.json({ error: "Permission refusée" }, { status: 403 }) };
+    }
+  }
+  return gate;
+}

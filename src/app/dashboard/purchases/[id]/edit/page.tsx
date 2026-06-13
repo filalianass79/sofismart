@@ -29,7 +29,13 @@ export default async function EditPurchasePage({ params }: Props) {
   if (!purchase) notFound();
 
   const [depots, suppliers] = await Promise.all([
-    prisma.depot.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.depot
+      .findMany({
+        where: { status: "ACTIVE" },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      })
+      .catch(() => []),
     prisma.supplier.findMany({
       orderBy: { name: "asc" },
       select: {

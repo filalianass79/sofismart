@@ -19,6 +19,7 @@ import {
 import type { vehicleStepSchema } from "@/lib/validations/purchase";
 import type { FuelType, TransmissionType } from "@/generated/prisma/enums";
 import type { z } from "zod";
+import { useDepotOptions } from "@/hooks/use-depot-options";
 
 export type VehicleFormValues = { vehicle: z.infer<typeof vehicleStepSchema> };
 
@@ -75,6 +76,7 @@ export function VehicleIdentificationFields({
   const color = watch("vehicle.color") || "";
   const selectedBrand = brands.find((b) => b.id === brandId);
   const selectedModel = models.find((m) => m.id === modelId);
+  const { depots: depotOptions, loading: depotsLoading } = useDepotOptions(depots);
 
   useEffect(() => {
     fetch("/api/brands")
@@ -318,15 +320,31 @@ export function VehicleIdentificationFields({
           </label>
           <label className="text-sm">
             <span className="font-medium text-navy-700">Dépôt destination *</span>
-            <select {...register("vehicle.depotId")} className="input-sofi mt-1 w-full">
-              <option value="">—</option>
-              {depots.map((d) => (
+            <select
+              {...register("vehicle.depotId")}
+              className="input-sofi mt-1 w-full"
+              disabled={depotsLoading}
+            >
+              <option value="">{depotsLoading ? "Chargement des dépôts…" : "— Choisir —"}</option>
+              {depotOptions.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
                 </option>
               ))}
             </select>
           </label>
+          {!depotsLoading && depotOptions.length === 0 && (
+            <p className="sm:col-span-2 catalog-hint">
+              <Settings className="mt-0.5 h-4 w-4 shrink-0 text-gold-700" />
+              <span>
+                Aucun dépôt actif.{" "}
+                <Link href="/dashboard/settings/depots" className="font-semibold text-gold-800 hover:underline">
+                  Paramètres → Dépôts
+                </Link>{" "}
+                pour en créer un.
+              </span>
+            </p>
+          )}
           {!hideTargetSalePrice && (
             <label className="text-sm">
               <span className="font-medium text-navy-700">Prix vente estimé</span>

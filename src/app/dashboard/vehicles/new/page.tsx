@@ -7,7 +7,13 @@ import { getFinancialAccessFromSession } from "@/lib/server/financial-access-ses
 export default async function NewVehiclePage() {
   const financial = await getFinancialAccessFromSession();
   const canViewFinancials = financial?.canViewFinancials ?? false;
-  const depots = await prisma.depot.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }).catch(() => []);
+  const depots = await prisma.depot
+    .findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    })
+    .catch(() => []);
   return (
     <div className="space-y-6">
       <Link

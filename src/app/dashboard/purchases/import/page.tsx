@@ -9,7 +9,13 @@ export default async function PurchaseInvoiceImportPage() {
   if (!access.canCreate) redirect("/dashboard/purchases");
 
   const [depots, suppliers] = await Promise.all([
-    prisma.depot.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.depot
+      .findMany({
+        where: { status: "ACTIVE" },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      })
+      .catch(() => []),
     prisma.supplier.findMany({
       where: { isArchived: false },
       orderBy: { name: "asc" },

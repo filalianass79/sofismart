@@ -12,7 +12,13 @@ export default async function NewPurchasePage() {
   }
 
   const [depots, suppliers] = await Promise.all([
-    prisma.depot.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.depot
+      .findMany({
+        where: { status: "ACTIVE" },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      })
+      .catch(() => []),
     prisma.supplier.findMany({
       orderBy: { name: "asc" },
       select: {

@@ -21,6 +21,7 @@ import type { InvoiceImportPayload } from "@/lib/invoice-import/types";
 import type { PurchaseWizardValues } from "@/lib/validations/purchase";
 import { InvoicePreviewPanel } from "./invoice-preview-panel";
 import { FieldConfidenceBadge } from "./field-confidence-badge";
+import { useDepotOptions } from "@/hooks/use-depot-options";
 
 type Depot = { id: string; name: string };
 type SupplierRow = { id: string; name: string; type: string };
@@ -91,6 +92,7 @@ export function PurchaseInvoiceImportWorkspace({
   const [saving, setSaving] = useState(false);
   const [debugPanel, setDebugPanel] = useState<"none" | "ocr" | "ai">("none");
   const [debugContent, setDebugContent] = useState<string>("");
+  const { depots: depotOptions, loading: depotsLoading } = useDepotOptions(depots);
 
   const loadImport = useCallback(async (id: string) => {
     const res = await fetch(`/api/purchases/invoice-import/${id}`);
@@ -580,10 +582,10 @@ export function PurchaseInvoiceImportWorkspace({
                         }))
                       }
                       className="input-sofi mt-1 w-full"
-                      disabled={!canEdit}
+                      disabled={!canEdit || depotsLoading}
                     >
-                      <option value="">—</option>
-                      {depots.map((d) => (
+                      <option value="">{depotsLoading ? "Chargement…" : "—"}</option>
+                      {depotOptions.map((d) => (
                         <option key={d.id} value={d.id}>
                           {d.name}
                         </option>
