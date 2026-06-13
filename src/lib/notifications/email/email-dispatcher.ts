@@ -127,7 +127,7 @@ export async function dispatchEmailEvent(ctx: EmailDispatchContext): Promise<voi
       recipientPayload = { ...payload, employeeName: r.name };
     }
 
-    let subject = template
+    const subject = template
       ? renderEmailSubject(template.subjectTemplate, recipientPayload)
       : String(recipientPayload.subject ?? recipientPayload.title ?? ctx.eventType.replace(/_/g, " "));
 
