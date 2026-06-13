@@ -22,6 +22,7 @@
     "db:seed": "prisma db seed",
     "admin:reset": "tsx scripts/reset-admin-password.ts",
     "seed:prod-demo": "tsx scripts/seed-prod-demo.ts",
+    "seed:emails": "tsx scripts/seed-emails-only.ts",
     "staging": "node scripts/with-env.mjs .env.staging next dev",
     "seed:staging": "node scripts/with-env.mjs .env.staging prisma db seed",
     "demo:documents": "node scripts/generate-demo-documents.mjs",

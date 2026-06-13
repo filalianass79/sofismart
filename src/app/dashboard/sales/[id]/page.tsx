@@ -16,8 +16,15 @@ import {
 import { SaleDetailActions } from "@/components/sales/sale-detail-actions";
 import type { SaleType } from "@/generated/prisma/enums";
 
-export default async function SaleDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SaleDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ validated?: string; validation?: string; message?: string }>;
+}) {
   const { id } = await params;
+  const sp = await searchParams;
   const financial = await getFinancialAccessFromSession();
   const canViewFinancials = financial?.canViewFinancials ?? false;
 
@@ -40,6 +47,21 @@ export default async function SaleDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-6">
+      {sp.validated === "1" && (
+        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800">
+          Vente validée avec succès. La facture et le bon de sortie sont disponibles ci-dessous.
+        </p>
+      )}
+      {sp.validation === "error" && sp.message && (
+        <p className="rounded-lg border border-morocco-500/30 bg-morocco-500/10 px-4 py-3 text-sm text-morocco-800">
+          {decodeURIComponent(sp.message)}
+        </p>
+      )}
+      {sp.validation === "expired" && (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900">
+          Lien de validation expiré. Ouvrez la vente depuis le tableau de bord pour valider manuellement.
+        </p>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-xs text-navy-500">{sale.reference}</p>

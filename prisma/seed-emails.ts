@@ -35,6 +35,27 @@ const EMAIL_TEMPLATES: {
   variables: string[];
 }[] = [
   {
+    key: "sale_validation_request_email",
+    name: "Demande validation vente — gérant",
+    eventType: "SALE_VALIDATION_REQUEST",
+    subjectTemplate: "Validation requise — vente {saleReference}",
+    htmlTemplate: tpl(
+      `<p><strong>{commercialName}</strong> demande la validation de la vente <strong>{saleReference}</strong>.</p>
+<ul><li>Client : {clientName}</li><li>Véhicule : {vehicleLabel}</li></ul>
+<p>Cliquez ci-dessous pour valider immédiatement cette vente (facture et bon de sortie).</p>`,
+      { label: "Valider la vente", urlVar: "validateUrl" },
+    ),
+    variables: [
+      "employeeName",
+      "commercialName",
+      "saleReference",
+      "clientName",
+      "vehicleLabel",
+      "validateUrl",
+      "actionUrl",
+    ],
+  },
+  {
     key: "sale_validated_email",
     name: "Vente validée — magasinier",
     eventType: "SALE_VALIDATED",

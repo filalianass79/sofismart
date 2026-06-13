@@ -7,12 +7,15 @@ import {
   isSecurityEmailEvent,
   renderEmailHtml,
   renderEmailSubject,
+  wrapEmailLayout,
 } from "./email-renderer";
 import { renderTemplate } from "../template-utils";
 import { appBaseUrl } from "../template-utils";
 import { findUsersByRoleCodes, findWarehouseUsersForDepot } from "../recipients";
 import { enqueueNotificationJob } from "../notification-queue";
 import { sendTransactionalEmail } from "./email-log.service";
+import { buildSaleValidationEmailUrl } from "@/lib/sales/sale-validation-token";
+import { renderEmailButton } from "./email-renderer";
 
 async function resolveUserEmail(userId: string): Promise<string | null> {
   const u = await prisma.user.findUnique({
@@ -27,11 +30,23 @@ async function resolveUserEmail(userId: string): Promise<string | null> {
 function enrichPayload(payload: EmailDispatchPayload): EmailDispatchPayload {
   const base = appBaseUrl();
   const out = { ...payload };
-  for (const key of ["actionUrl", "documentUrl"] as const) {
+  for (const key of ["actionUrl", "documentUrl", "validateUrl"] as const) {
     const v = out[key];
     if (v && !String(v).startsWith("http")) out[key] = `${base}${v}`;
   }
   return out;
+}
+
+function fallbackSaleValidationRequestHtml(payload: EmailDispatchPayload): string {
+  const body = String(payload.message ?? payload.title ?? "Demande de validation de vente");
+  const validateUrl = payload.validateUrl ? String(payload.validateUrl) : undefined;
+  let inner = `<p>${body.replace(/\n/g, "<br/>")}</p>`;
+  if (validateUrl) {
+    inner += renderEmailButton("Valider la vente", validateUrl);
+  } else if (payload.actionUrl) {
+    return fallbackEmailHtml(body, String(payload.actionUrl));
+  }
+  return wrapEmailLayout(inner, body.slice(0, 120));
 }
 
 async function resolveEmailRecipients(ctx: EmailDispatchContext) {
@@ -97,21 +112,43 @@ export async function dispatchEmailEvent(ctx: EmailDispatchContext): Promise<voi
   });
 
   const payload = enrichPayload(ctx.payload);
-  const subject = template
-    ? renderEmailSubject(template.subjectTemplate, payload)
-    : String(payload.subject ?? payload.title ?? ctx.eventType.replace(/_/g, " "));
-
-  const html = template
-    ? renderEmailHtml(template.htmlTemplate, payload)
-    : fallbackEmailHtml(
-        String(payload.message ?? payload.htmlBody ?? subject),
-        payload.actionUrl ? String(payload.actionUrl) : undefined,
-      );
-
-  const text = template?.textTemplate ? renderTemplate(template.textTemplate, payload) : undefined;
   const attachments = setting?.attachDocuments ? ctx.attachments : ctx.attachments;
 
   for (const r of recipients) {
+    let recipientPayload = payload;
+    if (ctx.eventType === "SALE_VALIDATION_REQUEST" && r.userId && payload.saleId) {
+      const validateUrl = buildSaleValidationEmailUrl(String(payload.saleId), r.userId);
+      recipientPayload = enrichPayload({
+        ...payload,
+        validateUrl,
+        employeeName: r.name ?? payload.employeeName ?? "Administrateur",
+      });
+    } else if (r.name) {
+      recipientPayload = { ...payload, employeeName: r.name };
+    }
+
+    let subject = template
+      ? renderEmailSubject(template.subjectTemplate, recipientPayload)
+      : String(recipientPayload.subject ?? recipientPayload.title ?? ctx.eventType.replace(/_/g, " "));
+
+    let html = template
+      ? renderEmailHtml(template.htmlTemplate, recipientPayload)
+      : fallbackSaleValidationRequestHtml(recipientPayload);
+
+    if (
+      ctx.eventType === "SALE_VALIDATION_REQUEST" &&
+      recipientPayload.validateUrl &&
+      template &&
+      !String(template.htmlTemplate).includes("validateUrl")
+    ) {
+      html = renderEmailHtml(
+        `${template.htmlTemplate}${renderEmailButton("Valider la vente", "{validateUrl}")}`,
+        recipientPayload,
+      );
+    }
+
+    const text = template?.textTemplate ? renderTemplate(template.textTemplate, recipientPayload) : undefined;
+
     await sendTransactionalEmail({
       to: r.email,
       toName: r.name,

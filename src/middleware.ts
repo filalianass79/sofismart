@@ -5,11 +5,13 @@ import type { JWT } from "next-auth/jwt";
 
 const isPublic = (pathname: string) =>
   pathname.startsWith("/login") ||
+  pathname.startsWith("/sale-validation") ||
   pathname.startsWith("/health") ||
   pathname.startsWith("/about-test") ||
   pathname.startsWith("/api/health") ||
   pathname.startsWith("/api/auth") ||
   pathname.startsWith("/api/whatsapp/webhook") ||
+  pathname.startsWith("/api/sales/validate-from-email") ||
   pathname.startsWith("/api/test/") ||
   pathname.startsWith("/_next") ||
   pathname.startsWith("/favicon.ico") ||

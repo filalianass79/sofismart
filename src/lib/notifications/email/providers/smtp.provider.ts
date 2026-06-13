@@ -9,6 +9,16 @@ import type { EmailSendResult, SendEmailParams } from "../types";
 import { resolveAttachmentPath, readAttachmentBuffer } from "../email-utils";
 import nodemailer from "nodemailer";
 
+/** Corrige les hôtes Gmail mal saisis (ex. smtp.google.com). */
+function resolveSmtpHost(): string | undefined {
+  const raw = process.env.SMTP_HOST?.trim();
+  if (!raw) return undefined;
+  if (raw === "smtp.google.com" || raw === "google.com" || raw === "mail.google.com") {
+    return "smtp.gmail.com";
+  }
+  return raw;
+}
+
 export class SmtpEmailProvider implements EmailProvider {
   readonly name = "smtp";
 
@@ -16,9 +26,12 @@ export class SmtpEmailProvider implements EmailProvider {
     const port = Number(process.env.SMTP_PORT ?? 587);
     const secure = process.env.SMTP_SECURE === "true" || port === 465;
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host: resolveSmtpHost(),
       port,
       secure,
+      requireTLS: !secure && port === 587,
+      connectionTimeout: 20_000,
+      greetingTimeout: 15_000,
       auth:
         process.env.SMTP_USER && process.env.SMTP_PASS
           ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
@@ -33,18 +46,31 @@ export class SmtpEmailProvider implements EmailProvider {
         hint: "Mode test actif (EMAIL_TEST_MODE=true) : aucune connexion SMTP réelle.",
       };
     }
-    if (!process.env.SMTP_HOST?.trim()) {
+    const host = resolveSmtpHost();
+    if (!host) {
       return {
         ok: false,
         error: "SMTP_HOST manquant",
         hint: "Ajoutez SMTP_HOST dans .env ou activez EMAIL_TEST_MODE=true pour simuler les envois.",
       };
     }
+    if (process.env.SMTP_HOST?.trim() === "smtp.google.com") {
+      return {
+        ok: false,
+        error: "Hôte SMTP incorrect (smtp.google.com)",
+        hint: "Utilisez SMTP_HOST=smtp.gmail.com pour Gmail, avec un mot de passe d'application Google.",
+      };
+    }
     try {
       await this.transporter().verify();
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Erreur SMTP" };
+      const message = e instanceof Error ? e.message : "Erreur SMTP";
+      const hint =
+        /timeout|ETIMEDOUT|ECONNREFUSED/i.test(message)
+          ? "Vérifiez SMTP_HOST (Gmail : smtp.gmail.com), le port 587 et que le serveur autorise les connexions sortantes SMTP."
+          : undefined;
+      return { ok: false, error: message, hint };
     }
   }
 

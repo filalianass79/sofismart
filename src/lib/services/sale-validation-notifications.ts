@@ -41,9 +41,14 @@ export async function notifyValidatorsOfSaleRequest(saleId: string) {
     payload: {
       title: "Demande de validation de vente",
       message: `${commercialName} demande la validation de la vente ${sale.reference} — ${sale.client?.name ?? "client"} — ${vehicleLabel}.`,
+      saleId,
       saleReference: sale.reference,
+      commercialName,
       clientName: sale.client?.name ?? "",
       vehicleLabel,
+      vehicleBrand: sale.vehicle.brand.label,
+      vehicleModel: sale.vehicle.carModel.label,
+      registrationNumber: sale.vehicle.plate ?? "",
       actionUrl: `/dashboard/sales/${saleId}`,
     },
   });
