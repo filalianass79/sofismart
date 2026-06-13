@@ -2,7 +2,9 @@
  * Met à jour les modèles e-mail et paramètres de notification (sans toucher aux utilisateurs).
  *
  * Usage serveur :
- *   docker compose --env-file .env.production --profile migrate run --rm migrator npx tsx scripts/seed-emails-only.ts
+ *   ./scripts/seed-emails-only.sh
+ *   docker compose --env-file .env.production --profile migrate build migrator
+ *   docker compose --env-file .env.production --profile migrate run --rm migrator npx tsx prisma/seed-emails-only.ts
  */
 import dotenv from "dotenv";
 dotenv.config({ path: process.env.ENV_FILE ?? ".env.production", override: true });
@@ -11,7 +13,7 @@ dotenv.config({ override: true });
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { seedEmails } from "../prisma/seed-emails";
+import { seedEmails } from "./seed-emails";
 
 async function main() {
   if (!process.env.DATABASE_URL) {
