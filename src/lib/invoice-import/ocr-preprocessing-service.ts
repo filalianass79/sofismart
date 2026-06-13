@@ -15,7 +15,8 @@ export function cleanOcrText(raw: string): string {
 }
 
 /** Détection orientation simplifiée (placeholder — amélioration future avec sharp). */
-export function detectDocumentOrientation(_buffer: Buffer): number {
+export function detectDocumentOrientation(buffer: Buffer): number {
+  void buffer;
   return 0;
 }
 
