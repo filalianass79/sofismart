@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft, Pencil } from "lucide-react";
+import { UploadImageThumb } from "@/components/ui/upload-image-thumb";
+import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 import { prisma } from "@/lib/prisma";
 import { getPurchaseAccessFromSession } from "@/lib/server/purchase-access-session";
 import { formatPurchaseMoney } from "@/lib/purchase-privacy";
@@ -174,11 +176,19 @@ export default async function PurchaseDetailPage({ params }: Props) {
         <Section title="Documents" className="rounded-xl border bg-white p-5">
           <ul className="divide-y text-sm">
             {p.documents.map((d) => (
-              <li key={d.id} className="flex items-center justify-between py-2">
-                <span>
-                  {documentCategoryLabels[d.category as DocumentCategory]} — {d.originalName}
+              <li key={d.id} className="flex items-center justify-between gap-3 py-2">
+                <span className="flex min-w-0 items-center gap-3">
+                  <UploadImageThumb src={d.path} name={d.originalName} />
+                  <span className="min-w-0 truncate">
+                    {documentCategoryLabels[d.category as DocumentCategory]} — {d.originalName}
+                  </span>
                 </span>
-                <a href={d.path} target="_blank" rel="noreferrer" className="text-gold-700 hover:underline">
+                <a
+                  href={normalizePublicUploadUrl(d.path) ?? d.path}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-gold-700 hover:underline"
+                >
                   Télécharger
                 </a>
               </li>

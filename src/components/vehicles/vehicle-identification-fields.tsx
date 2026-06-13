@@ -74,6 +74,7 @@ export function VehicleIdentificationFields({
   const modelId = watch("vehicle.modelId");
   const color = watch("vehicle.color") || "";
   const selectedBrand = brands.find((b) => b.id === brandId);
+  const selectedModel = models.find((m) => m.id === modelId);
 
   useEffect(() => {
     fetch("/api/brands")
@@ -192,6 +193,14 @@ export function VehicleIdentificationFields({
               <UploadImage src={selectedBrand.logo} alt="" fill className="object-contain p-0.5" />
             </span>
             {selectedBrand.label}
+          </p>
+        )}
+        {selectedModel?.photo && (
+          <p className="mt-2 flex items-center gap-2 text-xs text-navy-500">
+            <span className="relative block h-10 w-14 overflow-hidden rounded border border-navy-950/10 bg-white">
+              <UploadImage src={selectedModel.photo} alt="" fill className="object-cover" />
+            </span>
+            {selectedModel.label}
           </p>
         )}
       </FormSection>

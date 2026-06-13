@@ -57,8 +57,8 @@ const nextConfig: NextConfig = {
           },
         ]
       : [],
-    // Fichiers uploadés à chaud (Docker volume public/uploads) : pas d'optimiseur Next.js
-    unoptimized: process.env.UPLOAD_STORAGE !== "s3",
+    // Uploads runtime (/uploads/…) : pas d'optimiseur Next.js (local Docker ou proxy S3)
+    unoptimized: true,
     dangerouslyAllowSVG: true,
     contentDispositionType: "inline",
   },

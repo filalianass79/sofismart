@@ -8,7 +8,12 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { UserEmailPreferencesForm } from "@/components/notifications/user-email-preferences-form";
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ passwordUpdated?: string }>;
+}) {
+  const { passwordUpdated } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
@@ -23,6 +28,12 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <h2 className="font-display text-2xl text-navy-950">Mon profil</h2>
+
+      {passwordUpdated === "1" && (
+        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800">
+          Mot de passe mis à jour avec succès.
+        </p>
+      )}
 
       <section className="rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
         <h3 className="mb-3 font-semibold text-navy-900">Informations personnelles</h3>

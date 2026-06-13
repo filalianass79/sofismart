@@ -12,6 +12,8 @@ import {
 import { formatMoney } from "@/lib/utils";
 import { FinancialStatusBadge } from "./financial-status-badge";
 import { RelationshipStatusBadge } from "./relationship-status-badge";
+import { UploadImageThumb } from "@/components/ui/upload-image-thumb";
+import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 import type {
   ClientDocumentType,
   ClientType,
@@ -262,11 +264,19 @@ export function ClientDetailView({
           </div>
           <ul className="space-y-2 text-sm">
             {client.clientDocuments.map((d) => (
-              <li key={d.id} className="flex justify-between rounded-lg bg-cream-50 px-3 py-2">
-                <span>
-                  {clientDocumentTypeLabels[d.type]} — {d.title ?? d.fileName}
+              <li key={d.id} className="flex items-center justify-between gap-3 rounded-lg bg-cream-50 px-3 py-2">
+                <span className="flex min-w-0 items-center gap-3">
+                  <UploadImageThumb src={d.fileUrl} name={d.fileName} />
+                  <span className="min-w-0 truncate">
+                    {clientDocumentTypeLabels[d.type]} — {d.title ?? d.fileName}
+                  </span>
                 </span>
-                <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-gold-700 hover:underline">
+                <a
+                  href={normalizePublicUploadUrl(d.fileUrl) ?? d.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-gold-700 hover:underline"
+                >
                   Télécharger
                 </a>
               </li>

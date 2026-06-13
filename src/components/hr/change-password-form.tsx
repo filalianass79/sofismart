@@ -33,8 +33,8 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
     }
     setOk(true);
     await update({ passwordMustChange: false });
-    if (forced) router.push("/dashboard");
-    else router.refresh();
+    router.push("/dashboard/profile?passwordUpdated=1");
+    router.refresh();
   }
 
   return (

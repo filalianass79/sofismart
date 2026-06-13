@@ -1,6 +1,7 @@
 "use client";
 
 import { UploadImage } from "@/components/ui/upload-image";
+import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 import { Download, ImagePlus, X } from "lucide-react";
 import { useState } from "react";
 import { SofiSpinner } from "@/components/ui/loading";
@@ -52,6 +53,8 @@ export function CompanyAssetUpload({
         ? "h-20 w-full max-w-md"
         : "h-20 w-40";
 
+  const previewSrc = normalizePublicUploadUrl(value);
+
   return (
     <div className={cn("text-sm", className)}>
       <span className="font-medium text-navy-700">{label}</span>
@@ -62,7 +65,7 @@ export function CompanyAssetUpload({
             <UploadImage src={value} alt="" fill className="object-contain p-1" />
             <div className="absolute right-1 top-1 flex gap-1">
               <a
-                href={value}
+                href={previewSrc ?? value}
                 download
                 target="_blank"
                 rel="noreferrer"

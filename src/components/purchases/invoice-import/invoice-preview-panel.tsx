@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Maximize2, Minimize2, RotateCw, ZoomIn, ZoomOut } from "lucide-react";
+import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 
 export function InvoicePreviewPanel({
   fileUrl,
@@ -17,6 +18,7 @@ export function InvoicePreviewPanel({
   const [fullscreen, setFullscreen] = useState(false);
 
   const isPdf = fileMimeType === "application/pdf";
+  const previewUrl = normalizePublicUploadUrl(fileUrl) ?? fileUrl;
 
   const shell = fullscreen
     ? "fixed inset-0 z-50 flex flex-col bg-navy-950"
@@ -64,7 +66,7 @@ export function InvoicePreviewPanel({
       <div className="flex flex-1 items-center justify-center overflow-auto p-2">
         {isPdf ? (
           <iframe
-            src={fileUrl}
+            src={previewUrl}
             title="Facture PDF"
             className="h-full min-h-[380px] w-full bg-white"
             style={{
@@ -75,7 +77,7 @@ export function InvoicePreviewPanel({
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={fileUrl}
+            src={previewUrl}
             alt="Facture"
             className="max-h-full max-w-full object-contain"
             style={{

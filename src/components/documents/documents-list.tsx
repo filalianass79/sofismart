@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { FilterField, ListFilterToolbar, countActiveFilters, matchQuickSearch } from "@/components/ui/list-filters";
+import { UploadImageThumb } from "@/components/ui/upload-image-thumb";
+import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 
 export type DocumentRow = {
   id: string;
@@ -60,6 +62,7 @@ export function DocumentsList({ initialRows }: { initialRows: DocumentRow[] }) {
         <table className="w-full text-left text-sm">
           <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
             <tr>
+              <th className="px-4 py-3 w-12" />
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Catégorie</th>
               <th className="px-4 py-3">Fichier</th>
@@ -69,11 +72,19 @@ export function DocumentsList({ initialRows }: { initialRows: DocumentRow[] }) {
           <tbody className="divide-y divide-navy-950/5">
             {rows.map((d) => (
               <tr key={d.id}>
+                <td className="px-4 py-3">
+                  <UploadImageThumb src={d.path} name={d.originalName} size="xs" />
+                </td>
                 <td className="px-4 py-3">{new Date(d.createdAt).toLocaleString("fr-FR")}</td>
                 <td className="px-4 py-3">{d.category}</td>
                 <td className="px-4 py-3">{d.originalName}</td>
                 <td className="px-4 py-3 text-right">
-                  <a href={d.path} className="text-gold-700 hover:underline" target="_blank" rel="noreferrer">
+                  <a
+                    href={normalizePublicUploadUrl(d.path) ?? d.path}
+                    className="text-gold-700 hover:underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     Ouvrir
                   </a>
                 </td>

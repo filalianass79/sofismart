@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { UploadImage } from "@/components/ui/upload-image";
+import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/lib/utils";
@@ -70,6 +71,30 @@ export default async function VehicleDetailPage({ params }: Props) {
           </span>
         </div>
       </header>
+
+      {v.photos.length > 0 && (
+        <section className="rounded-xl border border-navy-950/10 bg-white p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-navy-900">Photos</h3>
+          <ul className="mt-3 flex flex-wrap gap-3">
+            {v.photos.map((photo) => {
+              const src = normalizePublicUploadUrl(photo.path);
+              if (!src) return null;
+              return (
+                <li key={photo.id}>
+                  <a
+                    href={src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative block h-24 w-32 overflow-hidden rounded-lg border border-navy-950/10 bg-cream-50"
+                  >
+                    <UploadImage src={src} alt="" fill className="object-cover" />
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section className="grid gap-4 sm:grid-cols-2">
         {canViewFinancials ? (
@@ -158,7 +183,12 @@ export default async function VehicleDetailPage({ params }: Props) {
                 <span>
                   {documentCategoryLabels[d.category as DocumentCategory]} — {d.originalName}
                 </span>
-                <a href={d.path} target="_blank" rel="noopener noreferrer" className="text-gold-700 hover:underline">
+                <a
+                  href={normalizePublicUploadUrl(d.path) ?? d.path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gold-700 hover:underline"
+                >
                   Ouvrir
                 </a>
               </li>

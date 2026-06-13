@@ -43,6 +43,8 @@ import {
   documentCategoryLabels,
 } from "@/lib/purchase-labels";
 import { formatMoney, cn } from "@/lib/utils";
+import { UploadImageThumb } from "@/components/ui/upload-image-thumb";
+import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 import {
   VehicleIdentificationFields,
   type VehicleFormValues,
@@ -523,9 +525,26 @@ function DocumentsStep({
       </div>
       <ul className="divide-y rounded-lg border">
         {documents.map((d) => (
-          <li key={d.id} className="flex items-center justify-between px-4 py-2 text-sm">
-            <span>{documentCategoryLabels[d.category as DocumentCategory] ?? d.category} — {d.originalName}</span>
-            <button type="button" onClick={() => onRemove(d.id)} className="text-morocco-600"><Trash2 className="h-4 w-4" /></button>
+          <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
+            <span className="flex min-w-0 items-center gap-3">
+              <UploadImageThumb src={d.path} name={d.originalName} />
+              <span className="min-w-0 truncate">
+                {documentCategoryLabels[d.category as DocumentCategory] ?? d.category} — {d.originalName}
+              </span>
+            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <a
+                href={normalizePublicUploadUrl(d.path) ?? d.path}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-medium text-gold-700 hover:underline"
+              >
+                Ouvrir
+              </a>
+              <button type="button" onClick={() => onRemove(d.id)} className="text-morocco-600">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </li>
         ))}
         {documents.length === 0 && <li className="px-4 py-6 text-center text-navy-400">Aucun document</li>}
