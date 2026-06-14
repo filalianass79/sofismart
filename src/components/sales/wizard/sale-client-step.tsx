@@ -149,7 +149,10 @@ export function SaleClientStep({ onClientSelected }: { onClientSelected: () => v
               <p className="text-xs text-navy-500">
                 {hits.length} client{hits.length !== 1 ? "s" : ""} — cliquez sur une carte pour continuer
               </p>
-              <div className="grid max-h-[min(420px,50vh)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                data-field="clientId"
+                className="grid max-h-[min(420px,50vh)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3"
+              >
                 {hits.map((c) => {
                   const active = clientId === c.id;
                   const isCompany = c.type === "COMPANY" || c.type === "RESELLER";
@@ -264,6 +267,7 @@ export function SaleClientStep({ onClientSelected }: { onClientSelected: () => v
               <label className="text-sm">
                 <span className="text-navy-700">Prénom *</span>
                 <input
+                  name="newClient.firstName"
                   className="input-sofi mt-1 w-full"
                   value={newClient.firstName}
                   onChange={(e) => setValue("newClient", { ...newClient, firstName: e.target.value })}
@@ -272,6 +276,7 @@ export function SaleClientStep({ onClientSelected }: { onClientSelected: () => v
               <label className="text-sm">
                 <span className="text-navy-700">Nom *</span>
                 <input
+                  name="newClient.lastName"
                   className="input-sofi mt-1 w-full"
                   value={newClient.lastName}
                   onChange={(e) => setValue("newClient", { ...newClient, lastName: e.target.value })}
@@ -288,6 +293,7 @@ export function SaleClientStep({ onClientSelected }: { onClientSelected: () => v
               <label className="text-sm sm:col-span-2">
                 <span className="text-navy-700">Téléphone *</span>
                 <input
+                  name="newClient.phone"
                   className="input-sofi mt-1 w-full"
                   value={newClient.phone}
                   onChange={(e) => setValue("newClient", { ...newClient, phone: e.target.value })}
@@ -309,6 +315,7 @@ export function SaleClientStep({ onClientSelected }: { onClientSelected: () => v
               <label className="text-sm sm:col-span-2">
                 <span className="text-navy-700">Raison sociale *</span>
                 <input
+                  name="newClient.companyName"
                   className="input-sofi mt-1 w-full"
                   value={newClient.companyName}
                   onChange={(e) => setValue("newClient", { ...newClient, companyName: e.target.value })}
@@ -325,6 +332,7 @@ export function SaleClientStep({ onClientSelected }: { onClientSelected: () => v
               <label className="text-sm">
                 <span className="text-navy-700">Téléphone *</span>
                 <input
+                  name="newClient.phone"
                   className="input-sofi mt-1 w-full"
                   value={newClient.phone}
                   onChange={(e) => setValue("newClient", { ...newClient, phone: e.target.value })}

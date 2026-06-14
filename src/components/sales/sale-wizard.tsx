@@ -8,6 +8,8 @@ import { userCanValidateSales } from "@/lib/rbac/can-validate-sale";
 import { useForm, FormProvider, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2, FileCheck } from "lucide-react";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
+import { parseApiError } from "@/lib/feedback/parse-api-error";
 import { Stepper, truncateStepperText, type StepItem } from "@/components/ui/stepper";
 import { WizardActions } from "@/components/ui/wizard-actions";
 import { LoadingOverlay } from "@/components/ui/loading";
@@ -33,32 +35,6 @@ type Commercial = {
   reference?: string;
 };
 
-function firstFormError(errors: FieldErrors): string | null {
-  for (const value of Object.values(errors)) {
-    if (!value || typeof value !== "object") continue;
-    if ("message" in value && typeof value.message === "string") return value.message;
-    const nested = firstFormError(value as FieldErrors);
-    if (nested) return nested;
-  }
-  return null;
-}
-
-function parseApiError(body: unknown): string {
-  if (!body || typeof body !== "object") return "Erreur lors de la validation";
-  const err = (body as { error?: unknown }).error;
-  if (typeof err === "string") return err;
-  if (err && typeof err === "object" && "fieldErrors" in err) {
-    const fieldErrors = (err as { fieldErrors?: Record<string, string[] | undefined> }).fieldErrors;
-    if (fieldErrors) {
-      const msg = Object.values(fieldErrors).flat().find(Boolean);
-      if (msg) return msg;
-    }
-    const formErrors = (err as { formErrors?: string[] }).formErrors;
-    if (formErrors?.[0]) return formErrors[0];
-  }
-  return "Erreur lors de la validation";
-}
-
 export function SaleWizard({
   commercials,
   defaultCommercialId,
@@ -74,7 +50,7 @@ export function SaleWizard({
   );
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { onFormInvalid, reportError, reportApiError } = useFormFeedback();
   const [submittedSale, setSubmittedSale] = useState<{
     id: string;
     reference: string;
@@ -155,16 +131,14 @@ export function SaleWizard({
   }
 
   function onInvalid(errors: FieldErrors<SaleWizardValues>) {
-    const msg = firstFormError(errors);
-    setError(
-      msg ??
-        "Formulaire incomplet. Vérifiez le client, le véhicule, le prix de vente (> 0) et les paiements."
+    onFormInvalid(
+      errors,
+      "Formulaire incomplet. Vérifiez le client, le véhicule, le prix de vente (> 0) et les paiements.",
     );
   }
 
   async function onSubmit(data: SaleWizardValues) {
     setLoading(true);
-    setError("");
     const payload = {
       ...data,
       status: canValidateSale ? ("VALIDATED" as const) : ("PENDING_VALIDATION" as const),
@@ -180,7 +154,7 @@ export function SaleWizard({
     setLoading(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError(parseApiError(j));
+      reportApiError(j, parseApiError(j, "Erreur lors de la validation"));
       return;
     }
     const sale = await res.json();
@@ -203,7 +177,7 @@ export function SaleWizard({
     });
     setLoading(false);
     if (res.ok) router.push("/dashboard/sales");
-    else setError("Échec enregistrement brouillon");
+    else reportError("Échec enregistrement brouillon");
   }
 
   const summaries = useMemo(
@@ -236,16 +210,12 @@ export function SaleWizard({
           summaries={summaries}
           onStepClick={(i) => !submittedSale && i < STEPS.length && setStep(i)}
         />
-        {error && <p className="text-sm text-morocco-600">{error}</p>}
-
         {step === 0 && (
           <SaleClientStep
             onClientSelected={async () => {
-              const ok = await trigger(["clientMode", "clientId"]);
-              if (ok) {
-                setError("");
-                setStep(1);
-              }
+              const ok = await trigger(["clientMode", "clientId", "newClient"]);
+              if (ok) setStep(1);
+              else onFormInvalid(form.formState.errors, "Complétez les informations du client.");
             }}
           />
         )}
@@ -253,10 +223,8 @@ export function SaleWizard({
           <SaleVehicleStep
             onVehicleSelected={async () => {
               const ok = await trigger(["vehicleId"]);
-              if (ok) {
-                setError("");
-                setStep(2);
-              }
+              if (ok) setStep(2);
+              else onFormInvalid(form.formState.errors, "Sélectionnez un véhicule.");
             }}
           />
         )}
@@ -471,12 +439,23 @@ export function SaleWizard({
             onNext={async () => {
               const ok = await validateCurrentStep();
               if (ok) {
-                setError("");
                 setStep((s) => s + 1);
-              } else if (step === 0) {
-                setError("Complétez les informations du nouveau client.");
-              } else if (step === 1) {
-                setError("Sélectionnez un véhicule.");
+              } else {
+                await trigger(
+                  step === 0
+                    ? (["clientMode", "clientId", "newClient"] as const)
+                    : step === 1
+                      ? (["vehicleId"] as const)
+                      : (["commercialId", "price", "discount", "saleDate"] as const),
+                );
+                onFormInvalid(
+                  form.formState.errors,
+                  step === 0
+                    ? "Complétez les informations du nouveau client."
+                    : step === 1
+                      ? "Sélectionnez un véhicule."
+                      : "Complétez les conditions de vente.",
+                );
               }
             }}
             onDraft={saveDraft}

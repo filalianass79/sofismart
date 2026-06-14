@@ -3,6 +3,17 @@
 import { useMemo, useState } from "react";
 import { FilterField, ListFilterToolbar, countActiveFilters, matchQuickSearch } from "@/components/ui/list-filters";
 import { UploadImageThumb } from "@/components/ui/upload-image-thumb";
+import { TableRowActions } from "@/components/ui/table-row-actions";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 
 export type DocumentRow = {
@@ -58,8 +69,10 @@ export function DocumentsList({ initialRows }: { initialRows: DocumentRow[] }) {
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        <table className="w-full text-left text-sm">
+      <ListDataShell empty={rows.length === 0} emptyMessage="Aucun document ne correspond aux critères.">
+        <>
+          <ListDesktopTable>
+            <table className="w-full text-left text-sm">
           <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
             <tr>
               <th className="px-4 py-3 w-12" />
@@ -91,11 +104,39 @@ export function DocumentsList({ initialRows }: { initialRows: DocumentRow[] }) {
               </tr>
             ))}
           </tbody>
-        </table>
-        {rows.length === 0 && (
-          <p className="p-6 text-center text-sm text-navy-500">Aucun document ne correspond aux critères.</p>
-        )}
-      </div>
+            </table>
+          </ListDesktopTable>
+          <ListMobileCards>
+            {rows.map((d) => (
+              <ListCard key={d.id}>
+                <ListCardHeader
+                  title={d.originalName}
+                  subtitle={new Date(d.createdAt).toLocaleString("fr-FR")}
+                />
+                <ListCardBody>
+                  <ListCardField label="Catégorie" value={d.category} />
+                  <ListCardField
+                    label="Aperçu"
+                    value={<UploadImageThumb src={d.path} name={d.originalName} size="xs" />}
+                  />
+                  <ListCardField label="Chemin" value={d.path} fullWidth />
+                </ListCardBody>
+                <ListCardFooter>
+                  <a
+                    href={normalizePublicUploadUrl(d.path) ?? d.path}
+                    className="text-sm font-medium text-gold-700 hover:underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Ouvrir
+                  </a>
+                  <TableRowActions detailHref={normalizePublicUploadUrl(d.path) ?? d.path} />
+                </ListCardFooter>
+              </ListCard>
+            ))}
+          </ListMobileCards>
+        </>
+      </ListDataShell>
     </div>
   );
 }

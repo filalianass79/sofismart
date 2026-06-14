@@ -1,5 +1,4 @@
 "use client";
-import { LoadingState } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -7,6 +6,17 @@ import { formatFinancialMoney } from "@/lib/financial-privacy";
 import { formatVehicleTitle } from "@/lib/vehicle-catalog";
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+  ListPageHeader,
+} from "@/components/ui/responsive-list";
 import type { VehicleStatus } from "@/generated/prisma/enums";
 
 type DepotOption = { id: string; name: string };
@@ -105,18 +115,14 @@ export function VehiclesList({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="font-display text-3xl text-navy-950">Véhicules</h2>
-          <p className="text-sm text-navy-600">Stock, filtres et fiches détaillées</p>
-        </div>
+      <ListPageHeader title="Véhicules" subtitle="Stock, filtres et fiches détaillées">
         <Link
           href="/dashboard/vehicles/new"
           className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-gold-600 to-gold-400 px-4 py-2 text-sm font-semibold text-navy-950 shadow-sm"
         >
           Ajouter un véhicule
         </Link>
-      </div>
+      </ListPageHeader>
 
       <ListFilterToolbar
         search={search}
@@ -175,17 +181,19 @@ export function VehiclesList({
         </p>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des véhicules…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-sm text-navy-500">
-            {hasFilters
-              ? "Aucun véhicule ne correspond aux filtres."
-              : "Aucun véhicule en stock. Les véhicules créés via un achat apparaissent ici automatiquement."}
-          </p>
-        ) : (
-          <table className="w-full text-left text-sm">
+      <ListDataShell
+        loading={loading}
+        loadingLabel="Chargement des véhicules…"
+        empty={rows.length === 0}
+        emptyMessage={
+          hasFilters
+            ? "Aucun véhicule ne correspond aux filtres."
+            : "Aucun véhicule en stock. Les véhicules créés via un achat apparaissent ici automatiquement."
+        }
+      >
+        <>
+          <ListDesktopTable>
+            <table className="w-full text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase tracking-wide text-navy-600">
               <tr>
                 <th className="px-4 py-3">Réf.</th>
@@ -255,9 +263,68 @@ export function VehiclesList({
                 </tr>
               ))}
             </tbody>
-          </table>
-        )}
-      </div>
+            </table>
+          </ListDesktopTable>
+          <ListMobileCards>
+            {rows.map((v) => (
+              <ListCard key={v.id}>
+                <ListCardHeader
+                  title={v.internalRef ?? "—"}
+                  subtitle={formatVehicleTitle(v)}
+                  badge={
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClasses[v.status]}`}
+                    >
+                      {statusLabels[v.status]}
+                    </span>
+                  }
+                />
+                <ListCardBody>
+                  <ListCardField label="Immatriculation" value={v.plate ?? "—"} />
+                  <ListCardField label="Dépôt" value={v.depot.name} />
+                  {canViewFinancials && (
+                    <ListCardField
+                      label="Prix de revient"
+                      value={formatFinancialMoney(Number(v.costPrice), true)}
+                    />
+                  )}
+                  <ListCardField
+                    label="Achat"
+                    value={
+                      v.purchase?.reference ? (
+                        <Link href={`/dashboard/purchases/${v.purchase.id}`}>Achat {v.purchase.reference}</Link>
+                      ) : (
+                        "—"
+                      )
+                    }
+                    fullWidth
+                  />
+                </ListCardBody>
+                <ListCardFooter>
+                  <TableRowActions
+                    detailHref={`/dashboard/vehicles/${v.id}`}
+                    editHref={v.isArchived ? undefined : `/dashboard/vehicles/${v.id}/edit`}
+                    archive={{
+                      url: `/api/vehicles/${v.id}/archive`,
+                      method: "PATCH",
+                      confirmMessage: `Archiver le véhicule « ${v.internalRef} » ? Il n'apparaîtra plus dans la liste active.`,
+                      disabled: Boolean(v.isArchived),
+                    }}
+                    remove={{
+                      url: `/api/vehicles/${v.id}`,
+                      method: "DELETE",
+                      confirmMessage: `Supprimer définitivement « ${v.internalRef} » ? Cette action est irréversible.`,
+                      disabled: Boolean(v.purchase || v.sale),
+                      title: v.purchase || v.sale ? "Suppression impossible (achat/vente lié)" : "Supprimer",
+                    }}
+                    onComplete={load}
+                  />
+                </ListCardFooter>
+              </ListCard>
+            ))}
+          </ListMobileCards>
+        </>
+      </ListDataShell>
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/api-auth";
+import { requirePermissionFresh } from "@/lib/api-auth";
 import { brandSchema } from "@/lib/validations/brand";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, { params }: Params) {
-  const gate = await requirePermission("users:*");
+  const gate = await requirePermissionFresh("parametres.edit");
   if ("response" in gate) return gate.response;
 
   const { id } = await params;
@@ -25,7 +25,7 @@ export async function PATCH(req: Request, { params }: Params) {
 }
 
 export async function DELETE(_req: Request, { params }: Params) {
-  const gate = await requirePermission("users:*");
+  const gate = await requirePermissionFresh("parametres.delete");
   if ("response" in gate) return gate.response;
 
   const { id } = await params;

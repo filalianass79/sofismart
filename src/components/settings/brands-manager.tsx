@@ -1,11 +1,20 @@
 "use client";
-import { LoadingState, LoadingOverlay, LoadingButtonContent } from "@/components/ui/loading";
+import { LoadingOverlay, LoadingButtonContent } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
 import { UploadImage } from "@/components/ui/upload-image";
-import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { CatalogImageUpload } from "@/components/settings/catalog-image-upload";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import { scrollPageToTop } from "@/lib/scroll-to-top";
 type BrandRow = {
   id: string;
@@ -14,7 +23,15 @@ type BrandRow = {
   _count?: { models: number; vehicles: number };
 };
 
-export function BrandsManager() {
+export function BrandsManager({
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
+}: {
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}) {
   const [rows, setRows] = useState<BrandRow[]>([]);
   const [label, setLabel] = useState("");
   const [logo, setLogo] = useState<string | null>(null);
@@ -71,6 +88,7 @@ export function BrandsManager() {
 
   return (
     <div className="space-y-6">
+      {(canCreate || canEdit) && (
       <form
         onSubmit={onSubmit}
         className="relative rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm ring-1 ring-gold-500/10"
@@ -107,19 +125,15 @@ export function BrandsManager() {
           </div>
         </div>
       </form>
+      )}
 
-      <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement du catalogue…" />
-        ) : rows.length === 0 ? (
-          <p className="p-12 text-center text-sm text-navy-500">
-            Aucune marque. Ajoutez la première ci-dessus, puis créez les modèles dans{" "}
-            <Link href="/dashboard/settings/models" className="font-medium text-gold-700 hover:underline">
-              Modèles
-            </Link>
-            .
-          </p>
-        ) : (
+      <ListDataShell
+        loading={loading}
+        loadingLabel="Chargement du catalogue…"
+        empty={rows.length === 0}
+        emptyMessage="Aucune marque. Ajoutez la première ci-dessus, puis créez les modèles dans Modèles."
+      >
+        <ListDesktopTable>
           <table className="w-full text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase tracking-wide text-navy-600">
               <tr>
@@ -127,7 +141,7 @@ export function BrandsManager() {
                 <th className="px-4 py-3">Libellé</th>
                 <th className="px-4 py-3 text-right">Modèles</th>
                 <th className="px-4 py-3 text-right">Véhicules</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                {(canEdit || canDelete) && <th className="px-4 py-3 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-950/5">
@@ -147,7 +161,66 @@ export function BrandsManager() {
                   <td className="px-4 py-3 font-medium text-navy-900">{b.label}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-navy-600">{b._count?.models ?? 0}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-navy-600">{b._count?.vehicles ?? 0}</td>
-                  <td className="px-4 py-3 text-right">
+                  {(canEdit || canDelete) && (
+                    <td className="px-4 py-3 text-right">
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditId(b.id);
+                            setLabel(b.label);
+                            setLogo(b.logo);
+                          }}
+                          className="rounded-lg p-2 text-navy-600 hover:bg-navy-950/5"
+                          title="Modifier"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => onDelete(b.id)}
+                          className="rounded-lg p-2 hover:bg-morocco-500/10"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4 text-morocco-600" />
+                        </button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ListDesktopTable>
+        <ListMobileCards>
+          {rows.map((b) => (
+            <ListCard key={b.id}>
+              <ListCardHeader
+                title={b.label}
+                subtitle={
+                  <span className="inline-flex items-center gap-2">
+                    {b.logo ? (
+                      <span className="relative block h-8 w-8 overflow-hidden rounded-md border border-navy-950/10 bg-cream-50">
+                        <UploadImage src={b.logo} alt="" fill className="object-contain p-1" />
+                      </span>
+                    ) : (
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-navy-950/5 text-xs font-bold text-navy-400">
+                        {b.label.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                    Marque
+                  </span>
+                }
+              />
+              <ListCardBody>
+                <ListCardField label="Modèles" value={b._count?.models ?? 0} />
+                <ListCardField label="Véhicules" value={b._count?.vehicles ?? 0} />
+              </ListCardBody>
+              {(canEdit || canDelete) && (
+                <ListCardFooter>
+                  {canEdit && (
                     <button
                       type="button"
                       onClick={() => {
@@ -160,6 +233,8 @@ export function BrandsManager() {
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
+                  )}
+                  {canDelete && (
                     <button
                       type="button"
                       onClick={() => onDelete(b.id)}
@@ -168,13 +243,13 @@ export function BrandsManager() {
                     >
                       <Trash2 className="h-4 w-4 text-morocco-600" />
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                  )}
+                </ListCardFooter>
+              )}
+            </ListCard>
+          ))}
+        </ListMobileCards>
+      </ListDataShell>
     </div>
   );
 }

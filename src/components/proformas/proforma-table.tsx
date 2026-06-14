@@ -8,7 +8,17 @@ import { Plus } from "lucide-react";
 import { formatMoney } from "@/lib/utils";
 import { formatVehicleTitle } from "@/lib/vehicle-catalog";
 import { ProformaStatusBadge } from "./proforma-status-badge";
-import { LoadingState } from "@/components/ui/loading";
+import { TableRowActions } from "@/components/ui/table-row-actions";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import type { ProformaStatus } from "@/generated/prisma/enums";
 
 type Row = {
@@ -44,8 +54,6 @@ export function ProformaTable() {
     return () => clearTimeout(t);
   }, [load]);
 
-  if (loading && !rows.length) return <LoadingState label="Chargement des proformas…" />;
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -76,8 +84,15 @@ export function ProformaTable() {
         </Link>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-navy-950/10 bg-white">
-        <table className="w-full text-left text-sm">
+      <ListDataShell
+        loading={loading}
+        loadingLabel="Chargement des proformas…"
+        empty={rows.length === 0}
+        emptyMessage="Aucune facture proforma"
+      >
+        <>
+          <ListDesktopTable>
+            <table className="w-full text-left text-sm">
           <thead className="border-b bg-cream-50 text-xs uppercase text-navy-500">
             <tr>
               <th className="px-3 py-2">Référence</th>
@@ -92,14 +107,7 @@ export function ProformaTable() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-navy-500">
-                  Aucune facture proforma
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => (
+            {rows.map((r) => (
                 <tr key={r.id} className="border-b border-navy-950/5">
                   <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">{r.reference}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-xs">
@@ -121,11 +129,39 @@ export function ProformaTable() {
                     </Link>
                   </td>
                 </tr>
-              ))
-            )}
+              ))}
           </tbody>
-        </table>
-      </div>
+            </table>
+          </ListDesktopTable>
+          <ListMobileCards>
+            {rows.map((r) => (
+              <ListCard key={r.id}>
+                <ListCardHeader
+                  title={r.reference}
+                  subtitle={r.client?.name ?? "Client provisoire"}
+                  badge={<ProformaStatusBadge status={r.status} />}
+                />
+                <ListCardBody>
+                  <ListCardField
+                    label="Date"
+                    value={format(new Date(r.proformaDate), "dd/MM/yyyy", { locale: fr })}
+                  />
+                  <ListCardField
+                    label="Validité"
+                    value={format(new Date(r.validityDate), "dd/MM/yyyy", { locale: fr })}
+                  />
+                  <ListCardField label="Véhicule" value={formatVehicleTitle(r.vehicle)} fullWidth />
+                  <ListCardField label="Total TTC" value={formatMoney(r.totalTTC)} />
+                  <ListCardField label="Commercial" value={r.commercial.name ?? "—"} />
+                </ListCardBody>
+                <ListCardFooter>
+                  <TableRowActions detailHref={`/dashboard/proformas/${r.id}`} />
+                </ListCardFooter>
+              </ListCard>
+            ))}
+          </ListMobileCards>
+        </>
+      </ListDataShell>
     </div>
   );
 }

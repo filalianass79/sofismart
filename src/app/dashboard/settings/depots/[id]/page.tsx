@@ -5,9 +5,13 @@ import { depotTypeLabels } from "@/lib/depot-labels";
 import { DepotStatusBadge } from "@/components/depots/depot-status-badge";
 import type { DepotStatus, DepotType } from "@/generated/prisma/enums";
 import { formatVehicleTitle } from "@/lib/vehicle-catalog";
+import { requireSettingsPageAccess } from "@/lib/rbac/settings-page-auth";
+import { hasPermission } from "@/lib/rbac/has-permission";
 
 export default async function DepotDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const perms = await requireSettingsPageAccess("depots.view");
+
   const depot = await prisma.depot.findUnique({
     where: { id },
     include: {
@@ -28,6 +32,7 @@ export default async function DepotDetailPage({ params }: { params: Promise<{ id
   });
   if (!depot) notFound();
 
+  const canEdit = hasPermission(perms, "depots.edit");
   const remaining = Math.max(0, depot.maxCapacity - depot._count.vehicles);
   const alert = depot._count.vehicles >= depot.maxCapacity;
 
@@ -39,9 +44,11 @@ export default async function DepotDetailPage({ params }: { params: Promise<{ id
           <h2 className="font-display text-3xl text-navy-950">{depot.name}</h2>
           <DepotStatusBadge status={depot.status as DepotStatus} />
         </div>
-        <Link href={`/dashboard/settings/depots/${id}/edit`} className="rounded-lg border px-4 py-2 text-sm font-medium">
-          Modifier
-        </Link>
+        {canEdit && (
+          <Link href={`/dashboard/settings/depots/${id}/edit`} className="rounded-lg border px-4 py-2 text-sm font-medium">
+            Modifier
+          </Link>
+        )}
       </div>
 
       {alert && (

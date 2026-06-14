@@ -5,18 +5,28 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { LoadingButtonContent } from "@/components/ui/loading";
 import { resolvePostLoginUrl } from "@/lib/auth/default-redirect";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
+import { highlightInvalidFormFields } from "@/lib/feedback/form-errors";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { showError, reportError } = useFormFeedback();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    const missing: string[] = [];
+    if (!email.trim()) missing.push("email");
+    if (!password) missing.push("password");
+    if (missing.length) {
+      highlightInvalidFormFields(missing);
+      showError("Veuillez renseigner l'email et le mot de passe.", "Champs obligatoires");
+      return;
+    }
+
     setLoading(true);
     const res = await signIn("credentials", {
       email: email.trim().toLowerCase(),
@@ -25,7 +35,8 @@ export function LoginForm() {
     });
     setLoading(false);
     if (res?.error) {
-      setError("Email ou mot de passe incorrect.");
+      reportError("Email ou mot de passe incorrect.");
+      highlightInvalidFormFields(["email", "password"]);
       return;
     }
     const sess = await fetch("/api/auth/session").then((r) => r.json());
@@ -34,12 +45,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      {error && (
-        <div className="rounded-lg border border-morocco-500/40 bg-morocco-500/10 px-3 py-2 text-sm text-morocco-600">
-          {error}
-        </div>
-      )}
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div>
         <label htmlFor="email" className="mb-1 block text-sm font-medium text-navy-800">
           Email
@@ -49,10 +55,9 @@ export function LoginForm() {
           name="email"
           type="email"
           autoComplete="email"
-          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm outline-none ring-gold-400/40 transition focus:ring-2"
+          className="input-sofi w-full"
         />
       </div>
       <div>
@@ -64,10 +69,9 @@ export function LoginForm() {
           name="password"
           type="password"
           autoComplete="current-password"
-          required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm outline-none ring-gold-400/40 transition focus:ring-2"
+          className="input-sofi w-full"
         />
       </div>
       <button

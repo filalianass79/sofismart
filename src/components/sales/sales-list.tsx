@@ -1,5 +1,4 @@
 "use client";
-import { LoadingState } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -11,6 +10,17 @@ import { formatVehicleTitle } from "@/lib/vehicle-catalog";
 import { SalePaymentStatusBadge, SaleRecordStatusBadge } from "./sale-status-badge";
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+  ListPageHeader,
+} from "@/components/ui/responsive-list";
 import type { SalePaymentStatus, SaleRecordStatus, SaleType } from "@/generated/prisma/enums";
 
 const RECORD_STATUS_FILTER_VALUES = ["PENDING_VALIDATION", "VALIDATED", "DRAFT"] as const;
@@ -99,15 +109,14 @@ export function SalesList({ canViewFinancials = false }: { canViewFinancials?: b
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-3xl text-navy-950">Ventes</h2>
+      <ListPageHeader title="Ventes">
         <Link
           href="/dashboard/sales/new"
           className="rounded-lg bg-gradient-to-r from-gold-600 to-gold-500 px-4 py-2 text-sm font-semibold text-navy-950"
         >
           + Nouvelle vente
         </Link>
-      </div>
+      </ListPageHeader>
 
       <ListFilterToolbar
         search={search}
@@ -154,13 +163,9 @@ export function SalesList({ canViewFinancials = false }: { canViewFinancials?: b
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des ventes…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-navy-500">Aucune vente trouvée.</p>
-        ) : (
-          <div className="overflow-x-auto">
+      <ListDataShell loading={loading} loadingLabel="Chargement des ventes…" empty={rows.length === 0} emptyMessage="Aucune vente trouvée.">
+        <>
+          <ListDesktopTable>
             <table className="w-full min-w-[1100px] text-left text-sm">
               <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
                 <tr>
@@ -215,9 +220,35 @@ export function SalesList({ canViewFinancials = false }: { canViewFinancials?: b
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-      </div>
+          </ListDesktopTable>
+          <ListMobileCards>
+            {rows.map((s) => (
+              <ListCard key={s.id}>
+                <ListCardHeader
+                  title={s.reference}
+                  subtitle={s.client.name}
+                  badge={<SaleRecordStatusBadge status={s.status} />}
+                />
+                <ListCardBody>
+                  <ListCardField label="Date" value={format(new Date(s.saleDate), "dd/MM/yyyy", { locale: fr })} />
+                  <ListCardField label="Véhicule" value={formatVehicleTitle(s.vehicle)} />
+                  <ListCardField label="Prix final" value={formatMoney(Number(s.finalPrice))} />
+                  {canViewFinancials && (
+                    <ListCardField label="Marge" value={formatMoney(Number(s.margin))} />
+                  )}
+                  <ListCardField label="Payé" value={formatMoney(s.amountPaid)} />
+                  <ListCardField label="Reste" value={formatMoney(s.amountDue)} />
+                  <ListCardField label="Paiement" value={<SalePaymentStatusBadge status={s.paymentStatus} />} />
+                  <ListCardField label="Commercial" value={s.commercial?.name ?? "—"} />
+                </ListCardBody>
+                <ListCardFooter>
+                  <TableRowActions detailHref={`/dashboard/sales/${s.id}`} />
+                </ListCardFooter>
+              </ListCard>
+            ))}
+          </ListMobileCards>
+        </>
+      </ListDataShell>
     </div>
   );
 }

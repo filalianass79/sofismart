@@ -8,6 +8,16 @@ import { DepotStatusBadge } from "@/components/depots/depot-status-badge";
 import { DepotForm } from "@/components/depots/depot-form";
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import type { DepotInput } from "@/lib/validations/depot";
 import type { DepotStatus, DepotType } from "@/generated/prisma/enums";
 import { scrollPageToTop } from "@/lib/scroll-to-top";
@@ -33,7 +43,17 @@ const initialFilters = { city: "", status: "", depotType: "" };
 const settingsFormCard =
   "rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm ring-1 ring-gold-500/10";
 
-export function DepotsManager({ managers }: { managers: Manager[] }) {
+export function DepotsManager({
+  managers,
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
+}: {
+  managers: Manager[];
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}) {
   const [rows, setRows] = useState<DepotRow[]>([]);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(initialFilters);
@@ -102,7 +122,7 @@ export function DepotsManager({ managers }: { managers: Manager[] }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-display text-xl text-navy-950">Dépôts</h3>
-        {!formOpen && (
+        {canCreate && !formOpen && (
           <button type="button" onClick={openCreate} className="btn-sofi-primary">
             <Plus className="h-4 w-4" />
             Nouveau dépôt
@@ -110,7 +130,7 @@ export function DepotsManager({ managers }: { managers: Manager[] }) {
         )}
       </div>
 
-      {formOpen && (
+      {formOpen && ((!editId && canCreate) || (!!editId && canEdit)) && (
         <section className={settingsFormCard}>
           <h4 className="font-display text-lg text-navy-950">
             {editId ? "Modifier le dépôt" : "Nouveau dépôt"}
@@ -179,12 +199,8 @@ export function DepotsManager({ managers }: { managers: Manager[] }) {
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-x-auto rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des dépôts…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-navy-500">Aucun dépôt trouvé.</p>
-        ) : (
+      <ListDataShell loading={loading} loadingLabel="Chargement des dépôts…" empty={rows.length === 0} emptyMessage="Aucun dépôt trouvé.">
+        <ListDesktopTable className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
               <tr>
@@ -223,13 +239,17 @@ export function DepotsManager({ managers }: { managers: Manager[] }) {
                   <td className="px-4 py-3">
                     <TableRowActions
                       detailHref={`/dashboard/settings/depots/${d.id}`}
-                      onEdit={() => openEdit(d.id)}
-                      archive={{
-                        url: `/api/depots/${d.id}`,
-                        method: "DELETE",
-                        confirmMessage: `Archiver le dépôt « ${d.name} » ?`,
-                        disabled: d.status === "ARCHIVED",
-                      }}
+                      onEdit={canEdit ? () => openEdit(d.id) : undefined}
+                      archive={
+                        canDelete
+                          ? {
+                              url: `/api/depots/${d.id}`,
+                              method: "DELETE",
+                              confirmMessage: `Archiver le dépôt « ${d.name} » ?`,
+                              disabled: d.status === "ARCHIVED",
+                            }
+                          : undefined
+                      }
                       onComplete={load}
                     />
                   </td>
@@ -237,8 +257,39 @@ export function DepotsManager({ managers }: { managers: Manager[] }) {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </ListDesktopTable>
+        <ListMobileCards>
+          {rows.map((d) => (
+            <ListCard key={d.id} className={d.capacityAlert ? "border-morocco-300/60 bg-morocco-50/20" : undefined}>
+              <ListCardHeader title={d.name} subtitle={`${d.reference} • ${depotTypeLabels[d.depotType]}`} badge={<DepotStatusBadge status={d.status} />} />
+              <ListCardBody>
+                <ListCardField label="Ville" value={d.city ?? "—"} />
+                <ListCardField label="Responsable" value={d.manager?.name ?? "—"} />
+                <ListCardField label="Capacité" value={d.maxCapacity} />
+                <ListCardField label="Stockés" value={d.vehiclesCount} />
+                <ListCardField label="Reste" value={`${d.remainingCapacity}${d.capacityAlert ? " ⚠" : ""}`} />
+              </ListCardBody>
+              <ListCardFooter>
+                <TableRowActions
+                  detailHref={`/dashboard/settings/depots/${d.id}`}
+                  onEdit={canEdit ? () => openEdit(d.id) : undefined}
+                  archive={
+                    canDelete
+                      ? {
+                          url: `/api/depots/${d.id}`,
+                          method: "DELETE",
+                          confirmMessage: `Archiver le dépôt « ${d.name} » ?`,
+                          disabled: d.status === "ARCHIVED",
+                        }
+                      : undefined
+                  }
+                  onComplete={load}
+                />
+              </ListCardFooter>
+            </ListCard>
+          ))}
+        </ListMobileCards>
+      </ListDataShell>
     </div>
   );
 }

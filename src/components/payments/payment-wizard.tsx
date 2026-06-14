@@ -10,6 +10,7 @@ import { LoadingOverlay } from "@/components/ui/loading";
 import { paymentWizardSchema, type PaymentWizardValues } from "@/lib/validations/payment";
 import { paymentCategoryLabels } from "@/lib/payment-labels";
 import { formatMoney } from "@/lib/utils";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
 import type { PaymentCategory } from "@/generated/prisma/enums";
 
 const steps = [
@@ -34,8 +35,8 @@ export function PaymentWizard({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { handleSubmitInvalid, reportApiError } = useFormFeedback();
 
   const form = useForm<PaymentWizardValues>({
     resolver: zodResolver(paymentWizardSchema) as never,
@@ -73,7 +74,6 @@ export function PaymentWizard({
 
   async function onSubmit(data: PaymentWizardValues) {
     setLoading(true);
-    setError("");
     const res = await fetch("/api/payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -82,7 +82,7 @@ export function PaymentWizard({
     setLoading(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError((j as { error?: string }).error ?? "Erreur");
+      reportApiError(j, "Erreur enregistrement paiement");
       return;
     }
     router.push("/dashboard/payments");
@@ -90,10 +90,9 @@ export function PaymentWizard({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="relative space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, handleSubmitInvalid)} className="relative space-y-6">
       {loading && <LoadingOverlay label="Enregistrement du paiement…" />}
       <Stepper steps={steps} current={step} summaries={summaries} onStepClick={(i) => setStep(i)} />
-      {error && <p className="text-sm text-morocco-600">{error}</p>}
 
       {step === 0 && (
         <section className="rounded-xl border border-navy-950/10 bg-white p-6">

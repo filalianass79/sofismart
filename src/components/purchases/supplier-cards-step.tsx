@@ -75,7 +75,10 @@ export function SupplierCardsStep({
         {filtered.length} fournisseur{filtered.length !== 1 ? "s" : ""} — cliquez sur une carte pour continuer
       </p>
 
-      <div className="grid max-h-[min(420px,50vh)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        data-field="supplierId"
+        className="grid max-h-[min(420px,50vh)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3"
+      >
         {filtered.map((s) => {
           const active = selectedId === s.id;
           return (

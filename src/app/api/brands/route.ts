@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requirePermission, requireVehicleCatalogAccess } from "@/lib/api-auth";
+import { requirePermissionFresh, requireVehicleCatalogAccess } from "@/lib/api-auth";
 import { brandSchema } from "@/lib/validations/brand";
 
 export async function GET(req: Request) {
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const gate = await requirePermission("users:*");
+  const gate = await requirePermissionFresh("parametres.create");
   if ("response" in gate) return gate.response;
 
   const body = await req.json();

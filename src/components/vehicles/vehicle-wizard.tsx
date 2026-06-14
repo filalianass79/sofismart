@@ -36,6 +36,7 @@ import {
 import { defaultVehicleWizardValues } from "@/lib/vehicle-wizard-data";
 import type { DocumentCategory } from "@/generated/prisma/enums";
 import type { InitialVehicleCatalog } from "@/lib/vehicle-catalog";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
 
 const STEPS: StepItem[] = [
   { id: "identification", label: "Identification", hint: "Marque, modèle, dépôt" },
@@ -70,7 +71,7 @@ export function VehicleWizard({
   const [vehicleId, setVehicleId] = useState(initialVehicleId);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { onFormInvalid, reportError, reportApiError } = useFormFeedback();
 
   const methods = useForm<VehicleWizardValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -130,7 +131,7 @@ export function VehicleWizard({
     const payload = getValues();
     const parsed = vehicleWizardSchema.safeParse(payload);
     if (!parsed.success) {
-      setError("Données invalides pour l'enregistrement.");
+      reportError("Données invalides pour l'enregistrement.");
       return null;
     }
     const url = vehicleId ? `/api/vehicles/${vehicleId}` : "/api/vehicles";
@@ -141,7 +142,7 @@ export function VehicleWizard({
     });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError((j as { error?: string }).error ?? "Erreur lors de l'enregistrement");
+      reportApiError(j, "Erreur lors de l'enregistrement");
       return null;
     }
     const id = (j as { id: string }).id;
@@ -173,7 +174,7 @@ export function VehicleWizard({
   async function onRemoveDocument(id: string) {
     const res = await fetch(`/api/documents/files/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      alert("Impossible de supprimer le fichier");
+      reportError("Impossible de supprimer le fichier");
       return;
     }
     setValue(
@@ -183,10 +184,9 @@ export function VehicleWizard({
   }
 
   async function finalize() {
-    setError(null);
     const ok = await trigger();
     if (!ok) {
-      setError("Corrigez les erreurs du formulaire avant validation.");
+      onFormInvalid(methods.formState.errors, "Corrigez les erreurs du formulaire avant validation.");
       return;
     }
     setLoading(true);
@@ -204,7 +204,7 @@ export function VehicleWizard({
     setLoading(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError((j as { error?: string }).error ?? "Erreur");
+      reportApiError(j, "Erreur");
       return;
     }
     router.push(`/dashboard/vehicles/${id}`);
@@ -215,11 +215,6 @@ export function VehicleWizard({
     <FormProvider {...methods}>
       <div className="space-y-6">
         <Stepper steps={steps} current={step} summaries={summaries} onStepClick={(i) => setStep(i)} />
-        {error && (
-          <div className="rounded-lg border border-morocco-500/40 bg-morocco-500/10 px-4 py-3 text-sm text-morocco-700">
-            {error}
-          </div>
-        )}
 
         <div className="relative rounded-xl border border-navy-950/10 bg-white p-6 shadow-sm">
           {loading && (
@@ -288,10 +283,9 @@ export function VehicleWizard({
             const stepId = steps[step]?.id;
             if (!ok) {
               await trigger(stepId === "identification" ? "vehicle" : "pricing");
-              setError("Complétez les champs obligatoires de cette étape.");
+              onFormInvalid(methods.formState.errors, "Complétez les champs obligatoires de cette étape.");
               return;
             }
-            setError(null);
             if (stepId === "identification" || (stepId === "pricing" && !vehicleId)) {
               setLoading(true);
               await persistDraft();

@@ -4,6 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { RolePermissionsEditor } from "@/app/dashboard/settings/roles/[id]/permissions/role-permissions-editor";
 import { LoadingState, LoadingOverlay, LoadingButtonContent } from "@/components/ui/loading";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import { scrollPageToTop } from "@/lib/scroll-to-top";
 
 type RoleRow = {
@@ -172,12 +182,8 @@ export function RolesManager() {
         </section>
       )}
 
-      <section className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des rôles…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-navy-500">Aucun rôle.</p>
-        ) : (
+      <ListDataShell loading={loading} loadingLabel="Chargement des rôles…" empty={rows.length === 0} emptyMessage="Aucun rôle.">
+        <ListDesktopTable>
           <table className="w-full text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
               <tr>
@@ -206,8 +212,28 @@ export function RolesManager() {
               ))}
             </tbody>
           </table>
-        )}
-      </section>
+        </ListDesktopTable>
+        <ListMobileCards>
+          {rows.map((r) => (
+            <ListCard key={r.id}>
+              <ListCardHeader title={r.name} subtitle={r.code} />
+              <ListCardBody>
+                <ListCardField label="Code" value={r.code} />
+                <ListCardField label="Utilisateurs" value={r._count?.users ?? 0} />
+              </ListCardBody>
+              <ListCardFooter>
+                <button
+                  type="button"
+                  onClick={() => openPermissions(r)}
+                  className="text-sm font-medium text-gold-700 hover:underline"
+                >
+                  Modifier les permissions
+                </button>
+              </ListCardFooter>
+            </ListCard>
+          ))}
+        </ListMobileCards>
+      </ListDataShell>
     </article>
   );
 }

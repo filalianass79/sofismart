@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Archive, Eye, Pencil, Trash2 } from "lucide-react";
 import { SofiSpinner } from "@/components/ui/loading";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
 
 export type ArchiveAction = {
   url: string;
@@ -33,6 +34,7 @@ export function TableRowActions({
   onComplete?: () => void;
 }) {
   const router = useRouter();
+  const { reportApiError } = useFormFeedback();
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [removeLoading, setRemoveLoading] = useState(false);
 
@@ -49,7 +51,7 @@ export function TableRowActions({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        alert((j as { error?: string }).error ?? "Erreur");
+        reportApiError(j);
         return;
       }
       onComplete?.();
@@ -72,7 +74,7 @@ export function TableRowActions({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        alert((j as { error?: string }).error ?? "Erreur");
+        reportApiError(j);
         return;
       }
       onComplete?.();

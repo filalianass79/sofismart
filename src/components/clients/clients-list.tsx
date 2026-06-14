@@ -1,5 +1,4 @@
 "use client";
-import { LoadingState } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -10,6 +9,17 @@ import { formatMoney } from "@/lib/utils";
 import { FinancialStatusBadge } from "./financial-status-badge";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
 import { TableRowActions } from "@/components/ui/table-row-actions";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+  ListPageHeader,
+} from "@/components/ui/responsive-list";
 import type { ClientType, FinancialStatus } from "@/generated/prisma/enums";
 
 const initialFilters = { type: "", city: "", financialStatus: "" };
@@ -59,8 +69,7 @@ export function ClientsList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-3xl text-navy-950">Clients</h2>
+      <ListPageHeader title="Clients">
         <div className="flex flex-wrap gap-2">
           <a
             href="/api/reports/excel?type=clients"
@@ -75,7 +84,7 @@ export function ClientsList() {
             + Nouveau client
           </Link>
         </div>
-      </div>
+      </ListPageHeader>
 
       <ListFilterToolbar
         search={search}
@@ -119,11 +128,10 @@ export function ClientsList() {
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des clients…" />
-        ) : (
-          <table className="w-full text-left text-sm">
+      <ListDataShell loading={loading} loadingLabel="Chargement des clients…" empty={clients.length === 0} emptyMessage="Aucun client trouvé">
+        <>
+          <ListDesktopTable>
+            <table className="w-full text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
               <tr>
                 <th className="px-4 py-3">Réf.</th>
@@ -138,13 +146,6 @@ export function ClientsList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-950/5">
-              {clients.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-navy-400">
-                    Aucun client trouvé
-                  </td>
-                </tr>
-              )}
               {clients.map((c) => (
                 <tr key={c.id} className={`hover:bg-cream-50/80 ${c.isArchived ? "opacity-60" : ""}`}>
                   <td className="px-4 py-3 font-mono text-xs">{c.reference}</td>
@@ -198,9 +199,57 @@ export function ClientsList() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        )}
-      </div>
+            </table>
+          </ListDesktopTable>
+          <ListMobileCards>
+            {clients.map((c) => (
+              <ListCard key={c.id} className={c.isArchived ? "opacity-60" : undefined}>
+                <ListCardHeader
+                  title={<Link href={`/dashboard/clients/${c.id}`}>{c.name}</Link>}
+                  subtitle={`${c.reference} · ${clientTypeLabels[c.type]}`}
+                  badge={<FinancialStatusBadge status={c.financialStatus} />}
+                />
+                <ListCardBody>
+                  <ListCardField label="Contact" value={c.phone ?? "—"} />
+                  <ListCardField label="Ville" value={c.city ?? "—"} />
+                  <ListCardField label="CIN / ICE" value={c.cin ?? c.ice ?? "—"} />
+                  <ListCardField label="Ventes" value={c.vehiclesCount ?? 0} />
+                  <ListCardField label="Solde" value={formatMoney(c.outstandingAmount)} />
+                  <ListCardField
+                    label="Dernier achat"
+                    value={
+                      c.lastSaleDate ? format(new Date(c.lastSaleDate), "dd/MM/yy", { locale: fr }) : "—"
+                    }
+                  />
+                </ListCardBody>
+                <ListCardFooter>
+                  <TableRowActions
+                    detailHref={`/dashboard/clients/${c.id}`}
+                    editHref={c.isArchived ? undefined : `/dashboard/clients/${c.id}/edit`}
+                    archive={{
+                      url: `/api/clients/${c.id}/archive`,
+                      method: "PATCH",
+                      confirmMessage: `Archiver le client « ${c.name} » ?`,
+                      disabled: c.isArchived,
+                    }}
+                    remove={{
+                      url: `/api/clients/${c.id}`,
+                      method: "DELETE",
+                      confirmMessage: `Supprimer définitivement « ${c.name} » ?`,
+                      disabled: (c.vehiclesCount ?? 0) > 0,
+                      title:
+                        (c.vehiclesCount ?? 0) > 0
+                          ? "Suppression impossible (ventes liées)"
+                          : "Supprimer",
+                    }}
+                    onComplete={load}
+                  />
+                </ListCardFooter>
+              </ListCard>
+            ))}
+          </ListMobileCards>
+        </>
+      </ListDataShell>
     </div>
   );
 }

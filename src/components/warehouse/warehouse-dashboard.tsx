@@ -17,6 +17,16 @@ import { VehicleStatusBadge } from "./vehicle-status-badge";
 import { ConfirmDeliveryModal } from "./confirm-delivery-modal";
 import { formatMoney } from "@/lib/utils";
 import { formatVehicleTitle } from "@/lib/vehicle-catalog";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 
 type Stats = {
   vehiclesInDepot: number;
@@ -125,6 +135,58 @@ export function WarehouseDashboard() {
     }
   }
 
+  function renderPendingActions(s: PendingSale) {
+    return (
+      <div className="flex flex-wrap gap-1">
+        {!s.deliveryNote ? (
+          <button
+            type="button"
+            onClick={() => void generateDeliveryNote(s.id)}
+            className="rounded bg-gold-500/20 px-2 py-1 text-xs font-medium text-navy-900"
+          >
+            Bon livraison
+          </button>
+        ) : (
+          <>
+            <a
+              href={`/api/warehouse/delivery-notes/${s.deliveryNote.id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded bg-navy-950/5 px-2 py-1 text-xs"
+            >
+              PDF livraison
+            </a>
+            <button
+              type="button"
+              onClick={() => setConfirmId(s.deliveryNote!.id)}
+              className="rounded bg-emerald-600/15 px-2 py-1 text-xs text-emerald-900"
+            >
+              Confirmer
+            </button>
+          </>
+        )}
+        {s.exitVoucher && (
+          <>
+            <a
+              href={`/api/exit-vouchers/${s.exitVoucher.id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded bg-navy-950/5 px-2 py-1 text-xs"
+            >
+              Bon sortie
+            </a>
+            <Link
+              href={`/dashboard/warehouse/exit-vouchers/scan/${s.exitVoucher.secureToken}`}
+              className="rounded bg-navy-950/5 px-2 py-1 text-xs"
+            >
+              QR sortie
+            </Link>
+          </>
+        )}
+      </div>
+    );
+  }
+
   const statCards = stats
     ? [
         { label: "Véhicules au dépôt", value: stats.vehiclesInDepot, icon: Package },
@@ -194,91 +256,82 @@ export function WarehouseDashboard() {
               Aucune livraison en attente pour votre dépôt.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-navy-950/10 bg-white">
-              <table className="w-full min-w-[800px] text-left text-sm">
-                <thead className="border-b bg-cream-50 text-xs uppercase text-navy-600">
-                  <tr>
-                    <th className="p-3">Vente</th>
-                    <th className="p-3">Client</th>
-                    <th className="p-3">Véhicule</th>
-                    <th className="p-3">Commercial</th>
-                    <th className="p-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <ListDataShell empty={false}>
+              <>
+                <ListDesktopTable>
+                  <table className="w-full min-w-[800px] text-left text-sm">
+                    <thead className="list-table-head">
+                      <tr>
+                        <th className="p-3">Vente</th>
+                        <th className="p-3">Client</th>
+                        <th className="p-3">Véhicule</th>
+                        <th className="p-3">Commercial</th>
+                        <th className="p-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pending.map((s) => (
+                        <tr key={s.id} className="list-table-row">
+                          <td className="p-3">
+                            <div className="font-medium">{s.reference}</div>
+                            <div className="text-xs text-navy-500">
+                              {new Date(s.saleDate).toLocaleDateString("fr-FR")}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            {s.client?.name ?? "—"}
+                            <br />
+                            <span className="text-xs text-navy-500">{s.client?.phone ?? ""}</span>
+                          </td>
+                          <td className="p-3">
+                            {formatVehicleTitle(s.vehicle as never)}
+                            <br />
+                            <span className="text-xs">{s.vehicle.plate ?? s.vehicle.vin ?? ""}</span>
+                          </td>
+                          <td className="p-3">{s.commercial?.name ?? "—"}</td>
+                          <td className="p-3">{renderPendingActions(s)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ListDesktopTable>
+                <ListMobileCards>
                   {pending.map((s) => (
-                    <tr key={s.id} className="border-b border-navy-950/5">
-                      <td className="p-3">
-                        <div className="font-medium">{s.reference}</div>
-                        <div className="text-xs text-navy-500">
-                          {new Date(s.saleDate).toLocaleDateString("fr-FR")}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        {s.client?.name ?? "—"}
-                        <br />
-                        <span className="text-xs text-navy-500">{s.client?.phone ?? ""}</span>
-                      </td>
-                      <td className="p-3">
-                        {formatVehicleTitle(s.vehicle as never)}
-                        <br />
-                        <span className="text-xs">{s.vehicle.plate ?? s.vehicle.vin ?? ""}</span>
-                      </td>
-                      <td className="p-3">{s.commercial?.name ?? "—"}</td>
-                      <td className="p-3">
-                        <div className="flex flex-wrap gap-1">
-                          {!s.deliveryNote ? (
-                            <button
-                              type="button"
-                              onClick={() => void generateDeliveryNote(s.id)}
-                              className="rounded bg-gold-500/20 px-2 py-1 text-xs font-medium text-navy-900"
-                            >
-                              Bon livraison
-                            </button>
-                          ) : (
+                    <ListCard key={s.id}>
+                      <ListCardHeader
+                        title={s.reference}
+                        subtitle={new Date(s.saleDate).toLocaleDateString("fr-FR")}
+                      />
+                      <ListCardBody>
+                        <ListCardField
+                          label="Client"
+                          value={
                             <>
-                              <a
-                                href={`/api/warehouse/delivery-notes/${s.deliveryNote.id}/pdf`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="rounded bg-navy-950/5 px-2 py-1 text-xs"
-                              >
-                                PDF livraison
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => setConfirmId(s.deliveryNote!.id)}
-                                className="rounded bg-emerald-600/15 px-2 py-1 text-xs text-emerald-900"
-                              >
-                                Confirmer
-                              </button>
+                              {s.client?.name ?? "—"}
+                              {s.client?.phone && (
+                                <span className="block text-xs font-normal text-navy-500">{s.client.phone}</span>
+                              )}
                             </>
-                          )}
-                          {s.exitVoucher && (
-                            <>
-                              <a
-                                href={`/api/exit-vouchers/${s.exitVoucher.id}/pdf`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="rounded bg-navy-950/5 px-2 py-1 text-xs"
-                              >
-                                Bon sortie
-                              </a>
-                              <Link
-                                href={`/dashboard/warehouse/exit-vouchers/scan/${s.exitVoucher.secureToken}`}
-                                className="rounded bg-navy-950/5 px-2 py-1 text-xs"
-                              >
-                                QR sortie
-                              </Link>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                          }
+                          fullWidth
+                        />
+                        <ListCardField
+                          label="Véhicule"
+                          value={formatVehicleTitle(s.vehicle as never)}
+                          fullWidth
+                        />
+                        <ListCardField
+                          label="Immat. / châssis"
+                          value={s.vehicle.plate ?? s.vehicle.vin ?? "—"}
+                        />
+                        <ListCardField label="Commercial" value={s.commercial?.name ?? "—"} />
+                      </ListCardBody>
+                      <ListCardFooter>{renderPendingActions(s)}</ListCardFooter>
+                    </ListCard>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </ListMobileCards>
+              </>
+            </ListDataShell>
           )}
         </section>
       )}

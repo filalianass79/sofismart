@@ -8,6 +8,16 @@ import { EmployeeStatusBadge } from "@/components/hr/employee-status-badge";
 import { EmployeeForm, type EmployeeFormData } from "@/components/hr/employee-form";
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import type { EmployeeJobFunction, EmployeeStatus } from "@/generated/prisma/enums";
 import { scrollPageToTop } from "@/lib/scroll-to-top";
 
@@ -73,10 +83,12 @@ export function EmployeesManager({
   depots,
   canCreate,
   canEdit,
+  canArchive = false,
 }: {
   depots: DepotOption[];
   canCreate: boolean;
   canEdit: boolean;
+  canArchive?: boolean;
 }) {
   const [rows, setRows] = useState<EmployeeRow[]>([]);
   const [search, setSearch] = useState("");
@@ -218,12 +230,8 @@ export function EmployeesManager({
         </FilterField>
       </ListFilterToolbar>
 
-      <section className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des salariés…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-navy-500">Aucun salarié trouvé.</p>
-        ) : (
+      <ListDataShell loading={loading} loadingLabel="Chargement des salariés…" empty={rows.length === 0} emptyMessage="Aucun salarié trouvé.">
+        <ListDesktopTable>
           <table className="w-full text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
               <tr>
@@ -253,12 +261,16 @@ export function EmployeesManager({
                     <TableRowActions
                       detailHref={`/dashboard/settings/employees/${e.id}`}
                       onEdit={canEdit ? () => openEdit(e.id) : undefined}
-                      archive={{
-                        url: `/api/employees/${e.id}/archive`,
-                        method: "PATCH",
-                        confirmMessage: `Archiver ${e.firstName} ${e.lastName} ?`,
-                        disabled: e.status === "ARCHIVED",
-                      }}
+                      archive={
+                        canArchive
+                          ? {
+                              url: `/api/employees/${e.id}/archive`,
+                              method: "PATCH",
+                              confirmMessage: `Archiver ${e.firstName} ${e.lastName} ?`,
+                              disabled: e.status === "ARCHIVED",
+                            }
+                          : undefined
+                      }
                       onComplete={load}
                     />
                   </td>
@@ -266,8 +278,37 @@ export function EmployeesManager({
               ))}
             </tbody>
           </table>
-        )}
-      </section>
+        </ListDesktopTable>
+        <ListMobileCards>
+          {rows.map((e) => (
+            <ListCard key={e.id}>
+              <ListCardHeader title={`${e.firstName} ${e.lastName}`} subtitle={e.reference} badge={<EmployeeStatusBadge status={e.status} />} />
+              <ListCardBody>
+                <ListCardField label="Fonction" value={jobFunctionLabels[e.jobFunction]} />
+                <ListCardField label="Dépôt" value={e.depot?.name ?? "—"} />
+                <ListCardField label="Compte" value={e.user ? "Oui" : "Non"} />
+              </ListCardBody>
+              <ListCardFooter>
+                <TableRowActions
+                  detailHref={`/dashboard/settings/employees/${e.id}`}
+                  onEdit={canEdit ? () => openEdit(e.id) : undefined}
+                  archive={
+                    canArchive
+                      ? {
+                          url: `/api/employees/${e.id}/archive`,
+                          method: "PATCH",
+                          confirmMessage: `Archiver ${e.firstName} ${e.lastName} ?`,
+                          disabled: e.status === "ARCHIVED",
+                        }
+                      : undefined
+                  }
+                  onComplete={load}
+                />
+              </ListCardFooter>
+            </ListCard>
+          ))}
+        </ListMobileCards>
+      </ListDataShell>
     </article>
   );
 }

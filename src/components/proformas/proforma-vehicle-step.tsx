@@ -153,7 +153,10 @@ export function ProformaVehicleStep({ onVehicleSelected }: { onVehicleSelected: 
           <p className="text-xs text-navy-500">
             {hits.length} véhicule{hits.length !== 1 ? "s" : ""} — cliquez sur une carte pour continuer
           </p>
-          <div className="grid max-h-[min(420px,50vh)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            data-field="vehicleId"
+            className="grid max-h-[min(420px,50vh)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {hits.map((v) => {
               const active = vehicleId === v.id;
               return (

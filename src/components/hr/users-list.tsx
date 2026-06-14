@@ -1,5 +1,4 @@
 "use client";
-import { LoadingState } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -8,6 +7,16 @@ import { fr } from "date-fns/locale";
 import { UserStatusBadge } from "./user-status-badge";
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import type { AccountStatus } from "@/generated/prisma/enums";
 
 type RoleOption = { id: string; name: string };
@@ -110,12 +119,8 @@ export function UsersList({
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des utilisateurs…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-navy-500">Aucun utilisateur trouvé.</p>
-        ) : (
+      <ListDataShell loading={loading} loadingLabel="Chargement des utilisateurs…" empty={rows.length === 0} emptyMessage="Aucun utilisateur trouvé.">
+        <ListDesktopTable>
           <table className="w-full text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
               <tr>
@@ -168,8 +173,44 @@ export function UsersList({
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </ListDesktopTable>
+        <ListMobileCards>
+          {rows.map((u) => (
+            <ListCard key={u.id}>
+              <ListCardHeader
+                title={u.employee ? `${u.employee.firstName} ${u.employee.lastName}` : u.name ?? u.username}
+                subtitle={u.email}
+                badge={<UserStatusBadge status={u.accountStatus} />}
+              />
+              <ListCardBody>
+                <ListCardField label="Rôle" value={u.appRole?.name ?? "—"} />
+                <ListCardField
+                  label="Dernière connexion"
+                  value={u.lastLoginAt ? format(new Date(u.lastLoginAt), "dd/MM/yy HH:mm", { locale: fr }) : "—"}
+                  fullWidth
+                />
+              </ListCardBody>
+              <ListCardFooter>
+                <TableRowActions
+                  detailHref={`/dashboard/settings/users/${u.id}`}
+                  editHref={canManagePermissions ? `/dashboard/settings/users/${u.id}/permissions` : undefined}
+                  archive={
+                    canEdit && u.accountStatus === "ACTIVE"
+                      ? {
+                          url: `/api/users/${u.id}/deactivate`,
+                          method: "PATCH",
+                          confirmMessage: "Désactiver ce compte utilisateur ?",
+                          title: "Désactiver",
+                        }
+                      : undefined
+                  }
+                  onComplete={load}
+                />
+              </ListCardFooter>
+            </ListCard>
+          ))}
+        </ListMobileCards>
+      </ListDataShell>
     </div>
   );
 }

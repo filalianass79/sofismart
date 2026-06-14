@@ -1,4 +1,7 @@
+import { Suspense } from "react";
 import { auth } from "@/auth";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
   resolveRoleDashboard,
   ROLE_DASHBOARD_META,
@@ -8,6 +11,8 @@ import { CommercialHomeDashboard } from "@/components/dashboard/home/commercial-
 import { ComptableHomeDashboard } from "@/components/dashboard/home/comptable-home";
 import { MagasinierHomeDashboard } from "@/components/dashboard/home/magasinier-home";
 import { DepotManagerHomeDashboard } from "@/components/dashboard/home/depot-manager-home";
+import { DashboardNotificationsPanel } from "@/components/dashboard/dashboard-notifications-panel";
+import { SofiSpinner } from "@/components/ui/loading";
 
 type PageProps = { searchParams: Promise<{ period?: string }> };
 
@@ -20,6 +25,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const kind = resolveRoleDashboard(roleCode, permissions);
   const meta = ROLE_DASHBOARD_META[kind];
+  const today = format(new Date(), "EEEE d MMMM yyyy", { locale: fr });
 
   let content: React.ReactNode;
   switch (kind) {
@@ -41,10 +47,26 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-3xl text-navy-950">{meta.title}</h2>
-        <p className="mt-1 text-sm text-navy-600">{meta.subtitle}</p>
-      </div>
+      {kind === "admin" ? (
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-navy-500">{today}</p>
+          <h2 className="mt-1 font-display text-3xl text-navy-950">{meta.title}</h2>
+          <p className="mt-1 text-sm text-navy-600">{meta.subtitle}</p>
+        </div>
+      ) : null}
+
+      {userId ? (
+        <Suspense
+          fallback={
+            <div className="flex min-h-[120px] items-center justify-center rounded-2xl border border-navy-950/10 bg-white">
+              <SofiSpinner label="Chargement des notifications…" size="sm" />
+            </div>
+          }
+        >
+          <DashboardNotificationsPanel userId={userId} />
+        </Suspense>
+      ) : null}
+
       {content}
     </div>
   );

@@ -49,7 +49,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
               </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6">{children}</main>
+            <main className="mx-auto w-full max-w-[1600px] flex-1 p-3 sm:p-5 lg:p-6">{children}</main>
             <RealtimeNotificationListener />
             <StagingFooterNote />
           </div>

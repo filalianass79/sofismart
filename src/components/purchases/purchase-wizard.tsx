@@ -43,6 +43,7 @@ import {
   documentCategoryLabels,
 } from "@/lib/purchase-labels";
 import { formatMoney, cn } from "@/lib/utils";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
 import { UploadImageThumb } from "@/components/ui/upload-image-thumb";
 import { normalizePublicUploadUrl } from "@/lib/storage/public-upload-url";
 import {
@@ -133,7 +134,7 @@ export function PurchaseWizard({
   const [suppliers, setSuppliers] = useState(initialSuppliers);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { onFormInvalid, reportError, reportApiError } = useFormFeedback();
   const [draftId, setDraftId] = useState(purchaseId);
   const [uploading, setUploading] = useState(false);
 
@@ -229,11 +230,10 @@ export function PurchaseWizard({
   }, [step, getValues]);
 
   async function save(status: "DRAFT" | "VALIDATED") {
-    setError(null);
     if (status === "VALIDATED") {
       const ok = await trigger();
       if (!ok) {
-        setError("Corrigez les erreurs du formulaire avant validation.");
+        onFormInvalid(methods.formState.errors, "Corrigez les erreurs du formulaire avant validation.");
         return;
       }
     }
@@ -248,7 +248,7 @@ export function PurchaseWizard({
     const j = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) {
-      setError(j.error ?? "Erreur lors de l'enregistrement");
+      reportApiError(j, "Erreur lors de l'enregistrement");
       return;
     }
     setDraftId(j.id);
@@ -288,12 +288,6 @@ export function PurchaseWizard({
           summaries={summaries}
           onStepClick={(i) => setStep(i)}
         />
-        {error && (
-          <div className="rounded-lg border border-morocco-500/40 bg-morocco-500/10 px-4 py-3 text-sm text-morocco-700">
-            {error}
-          </div>
-        )}
-
         <div className="relative rounded-xl border border-navy-950/10 bg-white p-6 shadow-sm">
           {loading && <LoadingOverlay label="Enregistrement de l'achat…" />}
           {step === 0 && (
@@ -302,7 +296,6 @@ export function PurchaseWizard({
               selectedId={supplierId}
               onSelect={(id) => {
                 setValue("supplierId", id);
-                setError(null);
                 setStep(1);
               }}
               onNew={() => setModalOpen(true)}
@@ -389,23 +382,24 @@ export function PurchaseWizard({
           onNext={async () => {
             const ok = await validateStep();
             if (!ok) {
-              await trigger(step === 1 ? "invoice" : "vehicle");
-              setError("Complétez les champs obligatoires de cette étape.");
+              if (step === 0) await trigger("supplierId");
+              else if (step === 1) await trigger("invoice");
+              else await trigger("vehicle");
+              onFormInvalid(methods.formState.errors, "Complétez les champs obligatoires de cette étape.");
               return;
             }
-            setError(null);
             if (step >= 2 && !draftId) await save("DRAFT");
             setStep((s) => s + 1);
           }}
           onDraft={async () => {
             if (step < 2) {
-              setError("Complétez l'étape « Véhicule » avant d'enregistrer le brouillon.");
+              reportError("Complétez l'étape « Véhicule » avant d'enregistrer le brouillon.");
               return;
             }
             const ok = await validateStep();
             if (step === 2 && !ok) {
               await trigger("vehicle");
-              setError("Complétez les champs obligatoires du véhicule.");
+              onFormInvalid(methods.formState.errors, "Complétez les champs obligatoires du véhicule.");
               return;
             }
             await save("DRAFT");
@@ -422,7 +416,6 @@ export function PurchaseWizard({
         onSaved={(s) => {
           setSuppliers((prev) => [...prev, s]);
           setValue("supplierId", s.id);
-          setError(null);
           setStep(1);
         }}
       />

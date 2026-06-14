@@ -16,6 +16,7 @@ import {
   relationshipStatusLabels,
 } from "@/lib/client-labels";
 import { formatMoney } from "@/lib/utils";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
 import type { ClientType } from "@/generated/prisma/enums";
 
 const steps = [
@@ -39,8 +40,8 @@ export function ClientWizard({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { handleSubmitInvalid, reportApiError } = useFormFeedback();
 
   const form = useForm<ClientWizardValues>({
     resolver: zodResolver(clientWizardSchema) as never,
@@ -61,7 +62,6 @@ export function ClientWizard({
 
   async function onSubmit(data: ClientWizardValues) {
     setLoading(true);
-    setError("");
     const url = clientId ? `/api/clients/${clientId}` : "/api/clients";
     const method = clientId ? "PUT" : "POST";
     const res = await fetch(url, {
@@ -72,7 +72,7 @@ export function ClientWizard({
     setLoading(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError(JSON.stringify(j.error) || "Erreur");
+      reportApiError(j, "Erreur enregistrement client");
       return;
     }
     const client = await res.json();
@@ -107,7 +107,7 @@ export function ClientWizard({
   );
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="relative space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, handleSubmitInvalid)} className="relative space-y-6">
       {loading && <LoadingOverlay label="Enregistrement du client…" />}
       <Stepper
         steps={steps}
@@ -115,7 +115,6 @@ export function ClientWizard({
         summaries={summaries}
         onStepClick={(i) => setStep(i)}
       />
-      {error && <p className="text-sm text-morocco-600">{error}</p>}
 
       {step === 0 && (
         <section className="rounded-xl border border-navy-950/10 bg-white p-6 shadow-sm">

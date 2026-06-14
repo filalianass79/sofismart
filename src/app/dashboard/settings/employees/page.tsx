@@ -1,14 +1,13 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { hasPermission, loadUserPermissions } from "@/lib/rbac/has-permission";
 import { EmployeesManager } from "@/components/settings/employees-manager";
+import {
+  requireSettingsPageAccess,
+  salariesCrudFlags,
+} from "@/lib/rbac/settings-page-auth";
 
 export default async function SettingsEmployeesPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-  const perms = await loadUserPermissions(prisma, session.user.id);
-  if (!hasPermission(perms, "salaries.view")) redirect("/dashboard");
+  const perms = await requireSettingsPageAccess("salaries.view");
+  const flags = salariesCrudFlags(perms);
 
   const depots = await prisma.depot.findMany({
     where: { status: "ACTIVE" },
@@ -19,8 +18,7 @@ export default async function SettingsEmployeesPage() {
   return (
     <EmployeesManager
       depots={depots}
-      canCreate={hasPermission(perms, "salaries.create")}
-      canEdit={hasPermission(perms, "salaries.edit")}
+      {...flags}
     />
   );
 }

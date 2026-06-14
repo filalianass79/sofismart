@@ -9,6 +9,7 @@ import { WizardActions } from "@/components/ui/wizard-actions";
 import { LoadingOverlay } from "@/components/ui/loading";
 import { createUserSchema } from "@/lib/validations/user-account";
 import { scrollPageToTop } from "@/lib/scroll-to-top";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
 
 type FormValues = {
   employeeId: string;
@@ -52,9 +53,9 @@ export function UserWizard({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const { handleSubmitInvalid, reportApiError } = useFormFeedback();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(createUserSchema) as never,
@@ -82,7 +83,6 @@ export function UserWizard({
 
   async function onSubmit(data: FormValues) {
     setLoading(true);
-    setError("");
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -91,7 +91,7 @@ export function UserWizard({
     setLoading(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError((j as { error?: string }).error ?? "Erreur");
+      reportApiError(j, "Erreur création compte");
       return;
     }
     const j = await res.json();
@@ -122,10 +122,9 @@ export function UserWizard({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="relative space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, handleSubmitInvalid)} className="relative space-y-6">
       {loading && <LoadingOverlay label="Création du compte…" />}
       <Stepper steps={steps} current={step} summaries={summaries} onStepClick={(i) => setStep(i)} />
-      {error && <p className="text-sm text-morocco-600">{String(error)}</p>}
 
       {step === 0 && (
         <section className="rounded-xl border border-navy-950/10 bg-white p-6">

@@ -2,12 +2,24 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Download, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { PaymentStatusBadge } from "@/components/purchases/payment-status-badge";
 import { PurchaseStatusBadge } from "@/components/purchases/purchase-status-badge";
 import { formatPurchaseMoney } from "@/lib/purchase-privacy";
 import { sumFees } from "@/lib/finance";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import { TableRowActions } from "@/components/ui/table-row-actions";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+  ListPageHeader,
+} from "@/components/ui/responsive-list";
 import type { PurchasePaymentStatus, PurchaseStatus } from "@/generated/prisma/enums";
 
 const initialFilters = { status: "", paymentStatus: "" };
@@ -71,20 +83,9 @@ export function PurchasesList({
     });
   }, [initialRows, search, filters]);
 
-  async function onDelete(id: string) {
-    if (!confirm("Supprimer cet achat ? Cette action est irréversible.")) return;
-    const res = await fetch(`/api/purchases/${id}`, { method: "DELETE" });
-    if (res.ok) window.location.reload();
-    else {
-      const j = await res.json().catch(() => ({}));
-      alert(j.error ?? "Erreur");
-    }
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-3xl text-navy-950">Achats</h2>
+      <ListPageHeader title="Achats">
         <div className="flex flex-wrap gap-2">
           {canViewFinancials && (
             <a
@@ -111,7 +112,7 @@ export function PurchasesList({
             </>
           )}
         </div>
-      </div>
+      </ListPageHeader>
 
       <ListFilterToolbar
         search={search}
@@ -146,8 +147,10 @@ export function PurchasesList({
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-x-auto rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        <table className="w-full min-w-[960px] text-left text-sm">
+      <ListDataShell empty={rows.length === 0} emptyMessage="Aucun achat trouvé">
+        <>
+          <ListDesktopTable>
+            <table className="w-full min-w-[960px] text-left text-sm">
           <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
             <tr>
               <th className="px-4 py-3">Réf.</th>
@@ -209,48 +212,78 @@ export function PurchasesList({
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      <Link
-                        href={`/dashboard/purchases/${p.id}`}
-                        className="rounded p-1.5 hover:bg-navy-950/5"
-                        title="Détail"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                      {canEdit && (
-                        <Link
-                          href={`/dashboard/purchases/${p.id}/edit`}
-                          className="rounded p-1.5 hover:bg-navy-950/5"
-                          title="Modifier"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Link>
-                      )}
-                      {canDelete && (
-                        <button
-                          type="button"
-                          onClick={() => onDelete(p.id)}
-                          className="rounded p-1.5 hover:bg-morocco-500/10 text-morocco-600"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
+                    <TableRowActions
+                      detailHref={`/dashboard/purchases/${p.id}`}
+                      editHref={canEdit ? `/dashboard/purchases/${p.id}/edit` : undefined}
+                      remove={
+                        canDelete
+                          ? {
+                              url: `/api/purchases/${p.id}`,
+                              method: "DELETE",
+                              confirmMessage: "Supprimer cet achat ? Cette action est irréversible.",
+                            }
+                          : undefined
+                      }
+                    />
                   </td>
                 </tr>
               );
             })}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={canViewFinancials ? 9 : 6} className="px-4 py-12 text-center text-navy-400">
-                  Aucun achat trouvé
-                </td>
-              </tr>
-            )}
           </tbody>
-        </table>
-      </div>
+            </table>
+          </ListDesktopTable>
+          <ListMobileCards>
+            {rows.map((p) => {
+              const fees = sumFees(p.fees);
+              const paid = p.payments.reduce((a, x) => a + Number(x.amount), 0);
+              const due = Number(p.totalPurchasePrice || p.basePrice) + fees;
+              const cost = due;
+              const balance = Math.max(0, Number(p.totalPurchasePrice || p.basePrice) - paid);
+              return (
+                <ListCard key={p.id}>
+                  <ListCardHeader
+                    title={p.reference}
+                    subtitle={`${new Date(p.purchaseDate).toLocaleDateString("fr-FR")} · ${p.supplier.name}`}
+                    badge={<PurchaseStatusBadge status={p.status} />}
+                  />
+                  <ListCardBody>
+                    <ListCardField
+                      label="Véhicule"
+                      value={
+                        p.vehicle ? `${p.vehicle.brandLabel} ${p.vehicle.modelLabel}` : "—"
+                      }
+                      fullWidth
+                    />
+                    {canViewFinancials && (
+                      <>
+                        <ListCardField label="Prix revient" value={formatPurchaseMoney(cost, true)} />
+                        <ListCardField label="Payé" value={formatPurchaseMoney(paid, true)} />
+                        <ListCardField label="Reste" value={formatPurchaseMoney(balance, true)} />
+                      </>
+                    )}
+                    <ListCardField label="Paiement" value={<PaymentStatusBadge status={p.paymentStatus} />} />
+                  </ListCardBody>
+                  <ListCardFooter>
+                    <TableRowActions
+                      detailHref={`/dashboard/purchases/${p.id}`}
+                      editHref={canEdit ? `/dashboard/purchases/${p.id}/edit` : undefined}
+                      remove={
+                        canDelete
+                          ? {
+                              url: `/api/purchases/${p.id}`,
+                              method: "DELETE",
+                              confirmMessage: "Supprimer cet achat ? Cette action est irréversible.",
+                            }
+                          : undefined
+                      }
+                    />
+                  </ListCardFooter>
+                </ListCard>
+              );
+            })}
+          </ListMobileCards>
+        </>
+      </ListDataShell>
     </div>
   );
 }

@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { jobFunctionLabels } from "@/lib/employee-labels";
 import type { EmployeeJobFunction } from "@/generated/prisma/enums";
 import { LoadingOverlay, LoadingButtonContent } from "@/components/ui/loading";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
+import { highlightInvalidFormFields } from "@/lib/feedback/form-errors";
 
 type Depot = { id: string; name: string };
 
@@ -47,7 +49,7 @@ export function EmployeeForm({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { showError, reportApiError } = useFormFeedback();
   const [form, setForm] = useState<EmployeeFormData>(
     initial ?? {
       firstName: "",
@@ -66,8 +68,15 @@ export function EmployeeForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const missing: string[] = [];
+    if (!form.firstName.trim()) missing.push("firstName");
+    if (!form.lastName.trim()) missing.push("lastName");
+    if (missing.length) {
+      highlightInvalidFormFields(missing);
+      showError("Le prénom et le nom sont obligatoires.", "Champs obligatoires");
+      return;
+    }
     setLoading(true);
-    setError("");
     const url = employeeId ? `/api/employees/${employeeId}` : "/api/employees";
     const method = employeeId ? "PUT" : "POST";
     const res = await fetch(url, {
@@ -78,7 +87,7 @@ export function EmployeeForm({
     setLoading(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError(j.error?.toString?.() ?? "Erreur enregistrement");
+      reportApiError(j, "Erreur enregistrement");
       return;
     }
     if (onSuccess) {
@@ -93,15 +102,24 @@ export function EmployeeForm({
   return (
     <form onSubmit={onSubmit} className="relative space-y-4">
       {loading && <LoadingOverlay label="Enregistrement en cours…" />}
-      {error && <p className="text-sm text-morocco-600">{error}</p>}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
           <span className="text-navy-700">Prénom *</span>
-          <input required value={form.firstName} onChange={(e) => set("firstName", e.target.value)} className="input-sofi mt-1 w-full" />
+          <input
+            name="firstName"
+            value={form.firstName}
+            onChange={(e) => set("firstName", e.target.value)}
+            className="input-sofi mt-1 w-full"
+          />
         </label>
         <label className="text-sm">
           <span className="text-navy-700">Nom *</span>
-          <input required value={form.lastName} onChange={(e) => set("lastName", e.target.value)} className="input-sofi mt-1 w-full" />
+          <input
+            name="lastName"
+            value={form.lastName}
+            onChange={(e) => set("lastName", e.target.value)}
+            className="input-sofi mt-1 w-full"
+          />
         </label>
         <label className="text-sm">
           <span className="text-navy-700">CIN</span>

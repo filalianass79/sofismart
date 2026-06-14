@@ -27,7 +27,6 @@ const legacyPerm: Record<string, Permission> = {
   "salaries.view": "users:*",
   "utilisateurs.view": "users:*",
   "roles.view": "users:*",
-  "parametres.view": "users:*",
 };
 
 const allTabs = [

@@ -1,5 +1,4 @@
 "use client";
-import { LoadingState } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -7,6 +6,16 @@ import { jobFunctionLabels } from "@/lib/employee-labels";
 import { EmployeeStatusBadge } from "./employee-status-badge";
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import type { EmployeeJobFunction, EmployeeStatus } from "@/generated/prisma/enums";
 
 type DepotOption = { id: string; name: string };
@@ -118,12 +127,8 @@ export function EmployeesList({
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des salariés…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-navy-500">Aucun salarié trouvé.</p>
-        ) : (
+      <ListDataShell loading={loading} loadingLabel="Chargement des salariés…" empty={rows.length === 0} emptyMessage="Aucun salarié trouvé.">
+        <ListDesktopTable>
           <table className="w-full text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
               <tr>
@@ -166,8 +171,33 @@ export function EmployeesList({
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </ListDesktopTable>
+        <ListMobileCards>
+          {rows.map((e) => (
+            <ListCard key={e.id}>
+              <ListCardHeader title={`${e.firstName} ${e.lastName}`} subtitle={e.reference} badge={<EmployeeStatusBadge status={e.status} />} />
+              <ListCardBody>
+                <ListCardField label="Fonction" value={jobFunctionLabels[e.jobFunction]} />
+                <ListCardField label="Dépôt" value={e.depot?.name ?? "—"} />
+                <ListCardField label="Compte" value={e.user ? "Oui" : "Non"} />
+              </ListCardBody>
+              <ListCardFooter>
+                <TableRowActions
+                  detailHref={`/dashboard/settings/employees/${e.id}`}
+                  editHref={`/dashboard/settings/employees/${e.id}/edit`}
+                  archive={{
+                    url: `/api/employees/${e.id}/archive`,
+                    method: "PATCH",
+                    confirmMessage: `Archiver ${e.firstName} ${e.lastName} ?`,
+                    disabled: e.status === "ARCHIVED",
+                  }}
+                  onComplete={load}
+                />
+              </ListCardFooter>
+            </ListCard>
+          ))}
+        </ListMobileCards>
+      </ListDataShell>
     </div>
   );
 }

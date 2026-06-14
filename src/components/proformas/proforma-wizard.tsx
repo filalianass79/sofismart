@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormProvider, useForm, type FieldErrors } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Stepper, type StepItem } from "@/components/ui/stepper";
 import { WizardActions } from "@/components/ui/wizard-actions";
@@ -17,6 +17,8 @@ import {
 } from "@/lib/validations/proforma";
 import { computeProformaAmounts } from "@/lib/proforma-finance";
 import { formatMoney } from "@/lib/utils";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
+import { parseApiError } from "@/lib/feedback/parse-api-error";
 
 const STEPS: StepItem[] = [
   { id: "client", label: "Client", hint: "Sélection" },
@@ -26,16 +28,6 @@ const STEPS: StepItem[] = [
 ];
 
 type Commercial = { id: string; name: string | null };
-
-function firstFormError(errors: FieldErrors): string | null {
-  for (const value of Object.values(errors)) {
-    if (!value || typeof value !== "object") continue;
-    if ("message" in value && typeof value.message === "string") return value.message;
-    const nested = firstFormError(value as FieldErrors);
-    if (nested) return nested;
-  }
-  return null;
-}
 
 function defaultValidityDate(days = 15) {
   const d = new Date();
@@ -57,7 +49,7 @@ export function ProformaWizard({
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { onFormInvalid, reportError } = useFormFeedback();
 
   const form = useForm<ProformaWizardValues>({
     resolver: zodResolver(proformaInvoiceSchema) as never,
@@ -109,36 +101,18 @@ export function ProformaWizard({
   }
 
   async function nextStep() {
-    setError("");
     const ok = await validateStep(step);
     if (!ok) {
-      setError(firstFormError(form.formState.errors) ?? "Vérifiez les champs");
+      onFormInvalid(form.formState.errors, "Vérifiez les champs obligatoires.");
       return;
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
-function parseApiError(body: unknown): string {
-  if (body && typeof body === "object" && "error" in body) {
-    const err = (body as { error: unknown }).error;
-    if (typeof err === "string") return err;
-    if (err && typeof err === "object") {
-      const flat = err as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
-      const msgs = [
-        ...(flat.formErrors ?? []),
-        ...Object.values(flat.fieldErrors ?? {}).flat(),
-      ];
-      if (msgs.length) return msgs.join(" · ");
-    }
-  }
-  return "Erreur enregistrement";
-}
-
   async function submit(saveAsDraft: boolean) {
-    setError("");
     const ok = await trigger();
     if (!ok) {
-      setError(firstFormError(form.formState.errors) ?? "Vérifiez les champs obligatoires");
+      onFormInvalid(form.formState.errors, "Vérifiez les champs obligatoires.");
       return;
     }
     setLoading(true);
@@ -152,18 +126,18 @@ function parseApiError(body: unknown): string {
         body: JSON.stringify({ ...payload, saveAsDraft: true }),
       });
       let body = await res.json();
-      if (!res.ok) throw new Error(parseApiError(body));
+      if (!res.ok) throw new Error(parseApiError(body, "Erreur enregistrement"));
 
       const id = (editId ?? body.id) as string;
       if (!saveAsDraft) {
         res = await fetch(`/api/proformas/${id}/generate`, { method: "POST" });
         body = await res.json();
-        if (!res.ok) throw new Error(parseApiError(body));
+        if (!res.ok) throw new Error(parseApiError(body, "Erreur génération"));
       }
       router.push(`/dashboard/proformas/${id}`);
       router.refresh();
     } catch (e) {
-      setError((e as Error).message);
+      reportError((e as Error).message);
     } finally {
       setLoading(false);
     }
@@ -174,11 +148,6 @@ function parseApiError(body: unknown): string {
       <div className="relative space-y-6">
         {loading && <LoadingOverlay label="Traitement…" />}
         <Stepper steps={STEPS} current={step} />
-        {error && (
-          <p className="rounded-lg border border-morocco-200 bg-morocco-50 px-4 py-2 text-sm text-morocco-800">
-            {error}
-          </p>
-        )}
 
         {step === 0 && <SaleClientStep onClientSelected={() => nextStep()} />}
         {step === 1 && <ProformaVehicleStep onVehicleSelected={() => nextStep()} />}

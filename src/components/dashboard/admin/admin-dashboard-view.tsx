@@ -17,6 +17,15 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { AdminDashboardData } from "@/lib/services/admin-dashboard-service";
 import { AdminBarChart } from "./bar-chart";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 
 function KpiCard({
   title,
@@ -341,7 +350,7 @@ export function AdminDashboardView({ data }: { data: AdminDashboardData }) {
           className="lg:col-span-2"
           action={{ href: "/dashboard/sales", label: "Voir tout" }}
         >
-          <div className="overflow-x-auto">
+          <ListDesktopTable>
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead>
                 <tr className="border-b border-navy-950/10 text-xs uppercase text-navy-500">
@@ -375,7 +384,25 @@ export function AdminDashboardView({ data }: { data: AdminDashboardData }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ListDesktopTable>
+          <ListMobileCards>
+            {data.recentSales.map((s) => (
+              <ListCard key={s.id} href={`/dashboard/sales/${s.id}`}>
+                <ListCardHeader
+                  title={s.reference}
+                  subtitle={format(new Date(s.saleDate), "dd/MM/yyyy", { locale: fr })}
+                />
+                <ListCardBody>
+                  <ListCardField label="Client" value={s.client ?? "—"} fullWidth />
+                  <ListCardField label="Véhicule" value={s.vehicle} fullWidth />
+                  <ListCardField label="Montant" value={formatMoney(s.revenue)} />
+                </ListCardBody>
+                <ListCardFooter>
+                  <span className="text-xs font-medium text-gold-700">Voir la vente →</span>
+                </ListCardFooter>
+              </ListCard>
+            ))}
+          </ListMobileCards>
         </Panel>
       </div>
 

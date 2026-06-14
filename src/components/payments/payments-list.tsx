@@ -1,5 +1,4 @@
 "use client";
-import { LoadingState } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -10,6 +9,17 @@ import { paymentCategoryLabels, paymentValidationLabels } from "@/lib/payment-la
 import type { PaymentCategory, PaymentValidationStatus } from "@/generated/prisma/enums";
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+  ListPageHeader,
+} from "@/components/ui/responsive-list";
 
 type Row = {
   id: string;
@@ -59,15 +69,14 @@ export function PaymentsList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-3xl text-navy-950">Paiements</h2>
+      <ListPageHeader title="Paiements">
         <Link
           href="/dashboard/payments/new"
           className="rounded-lg bg-gradient-to-r from-gold-600 to-gold-500 px-4 py-2 text-sm font-semibold text-navy-950"
         >
           + Nouveau paiement
         </Link>
-      </div>
+      </ListPageHeader>
 
       <ListFilterToolbar
         search={search}
@@ -127,13 +136,10 @@ export function PaymentsList() {
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des paiements…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-navy-500">Aucun paiement trouvé.</p>
-        ) : (
-          <table className="w-full text-left text-sm">
+      <ListDataShell loading={loading} loadingLabel="Chargement des paiements…" empty={rows.length === 0} emptyMessage="Aucun paiement trouvé.">
+        <>
+          <ListDesktopTable>
+            <table className="w-full text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
               <tr>
                 <th className="px-4 py-3">Réf.</th>
@@ -193,9 +199,68 @@ export function PaymentsList() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        )}
-      </div>
+            </table>
+          </ListDesktopTable>
+          <ListMobileCards>
+            {rows.map((p) => (
+              <ListCard key={p.id} className={p.overdue ? "bg-morocco-50/50" : undefined}>
+                <ListCardHeader
+                  title={p.paymentReference ?? p.id.slice(0, 8)}
+                  subtitle={p.client?.name ?? p.supplier?.name ?? "—"}
+                />
+                <ListCardBody>
+                  <ListCardField
+                    label="Type"
+                    value={p.category ? paymentCategoryLabels[p.category] : "—"}
+                  />
+                  <ListCardField
+                    label="Date"
+                    value={format(new Date(p.paidAt), "dd/MM/yyyy", { locale: fr })}
+                  />
+                  <ListCardField label="Lié" value={p.sale?.reference ?? p.purchase?.reference ?? "—"} />
+                  <ListCardField label="Montant" value={formatMoney(Number(p.amount))} />
+                  <ListCardField label="Statut" value={paymentValidationLabels[p.validationStatus]} />
+                  <ListCardField
+                    label="Échéance"
+                    value={
+                      p.dueDate ? format(new Date(p.dueDate), "dd/MM/yyyy", { locale: fr }) : "—"
+                    }
+                  />
+                </ListCardBody>
+                <ListCardFooter>
+                  <TableRowActions
+                    detailHref={
+                      p.saleId
+                        ? `/dashboard/sales/${p.saleId}`
+                        : p.purchaseId
+                          ? `/dashboard/purchases/${p.purchaseId}`
+                          : `/dashboard/payments/new`
+                    }
+                    archive={
+                      p.validationStatus === "PENDING"
+                        ? {
+                            url: `/api/payments/${p.id}`,
+                            method: "DELETE",
+                            confirmMessage: "Supprimer ce paiement en attente ?",
+                          }
+                        : p.validationStatus === "VALIDATED"
+                          ? {
+                              url: `/api/payments/${p.id}/cancel`,
+                              method: "POST",
+                              body: { reason: "Annulation depuis la liste" },
+                              confirmMessage: "Annuler ce paiement ?",
+                              title: "Annuler",
+                            }
+                          : undefined
+                    }
+                    onComplete={load}
+                  />
+                </ListCardFooter>
+              </ListCard>
+            ))}
+          </ListMobileCards>
+        </>
+      </ListDataShell>
     </div>
   );
 }

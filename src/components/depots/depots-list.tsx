@@ -1,5 +1,4 @@
 "use client";
-import { LoadingState } from "@/components/ui/loading";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -7,6 +6,16 @@ import { depotTypeLabels } from "@/lib/depot-labels";
 import { DepotStatusBadge } from "./depot-status-badge";
 import { TableRowActions } from "@/components/ui/table-row-actions";
 import { FilterField, ListFilterToolbar, countActiveFilters } from "@/components/ui/list-filters";
+import {
+  ListCard,
+  ListCardBody,
+  ListCardField,
+  ListCardFooter,
+  ListCardHeader,
+  ListDataShell,
+  ListDesktopTable,
+  ListMobileCards,
+} from "@/components/ui/responsive-list";
 import type { DepotStatus, DepotType } from "@/generated/prisma/enums";
 
 type DepotRow = {
@@ -105,12 +114,8 @@ export function DepotsList() {
         </FilterField>
       </ListFilterToolbar>
 
-      <div className="overflow-x-auto rounded-xl border border-navy-950/10 bg-white shadow-sm">
-        {loading ? (
-          <LoadingState label="Chargement des dépôts…" />
-        ) : rows.length === 0 ? (
-          <p className="p-8 text-center text-navy-500">Aucun dépôt trouvé.</p>
-        ) : (
+      <ListDataShell loading={loading} loadingLabel="Chargement des dépôts…" empty={rows.length === 0} emptyMessage="Aucun dépôt trouvé.">
+        <ListDesktopTable className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-cream-100 text-xs font-semibold uppercase text-navy-600">
               <tr>
@@ -163,8 +168,35 @@ export function DepotsList() {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </ListDesktopTable>
+        <ListMobileCards>
+          {rows.map((d) => (
+            <ListCard key={d.id} className={d.capacityAlert ? "border-morocco-300/60 bg-morocco-50/20" : undefined}>
+              <ListCardHeader title={d.name} subtitle={`${d.reference} • ${depotTypeLabels[d.depotType]}`} badge={<DepotStatusBadge status={d.status} />} />
+              <ListCardBody>
+                <ListCardField label="Ville" value={d.city ?? "—"} />
+                <ListCardField label="Responsable" value={d.manager?.name ?? "—"} />
+                <ListCardField label="Capacité" value={d.maxCapacity} />
+                <ListCardField label="Stockés" value={d.vehiclesCount} />
+                <ListCardField label="Reste" value={`${d.remainingCapacity}${d.capacityAlert ? " ⚠" : ""}`} />
+              </ListCardBody>
+              <ListCardFooter>
+                <TableRowActions
+                  detailHref={`/dashboard/settings/depots/${d.id}`}
+                  editHref={`/dashboard/settings/depots/${d.id}/edit`}
+                  archive={{
+                    url: `/api/depots/${d.id}`,
+                    method: "DELETE",
+                    confirmMessage: `Archiver le dépôt « ${d.name} » ?`,
+                    disabled: d.status === "ARCHIVED",
+                  }}
+                  onComplete={load}
+                />
+              </ListCardFooter>
+            </ListCard>
+          ))}
+        </ListMobileCards>
+      </ListDataShell>
     </div>
   );
 }

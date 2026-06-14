@@ -95,6 +95,31 @@ export async function deleteNotification(id: string, userId: string) {
   return true;
 }
 
+export async function getDashboardNotifications(userId: string, take = 8) {
+  const [rawItems, unreadCount] = await Promise.all([
+    prisma.appNotification.findMany({
+      where: {
+        userId,
+        status: { in: ["UNREAD", "READ"] },
+      },
+      orderBy: { createdAt: "desc" },
+      take: Math.min(take * 2, 20),
+    }),
+    getUnreadCount(userId),
+  ]);
+
+  const items = [...rawItems]
+    .sort((a, b) => {
+      if (a.status === b.status) {
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      }
+      return a.status === "UNREAD" ? -1 : 1;
+    })
+    .slice(0, take);
+
+  return { items, unreadCount };
+}
+
 export async function listUserNotifications(
   userId: string,
   opts: {

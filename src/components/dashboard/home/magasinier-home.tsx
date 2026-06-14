@@ -1,81 +1,108 @@
-import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { getWarehouseDepotScope } from "@/lib/warehouse/depot-scope";
 import { getWarehouseStats, getPendingDeliveries } from "@/lib/services/warehouse-dashboard-service";
-import { prisma } from "@/lib/prisma";
-import { Package, Truck, Calendar, FileCheck, ArrowRight } from "lucide-react";
+import { Package, Truck, Calendar, FileCheck, Warehouse, ClipboardList } from "lucide-react";
 import { formatVehicleTitle } from "@/lib/vehicle-catalog";
+import {
+  ActivityItem,
+  ActivityList,
+  DashboardHero,
+  DashboardPanel,
+  EmptyState,
+  KpiCard,
+  QuickAction,
+} from "@/components/dashboard/shared/dashboard-ui";
 
 export async function MagasinierHomeDashboard({ userId }: { userId: string }) {
   const scope = await getWarehouseDepotScope(userId);
-  const [stats, pending, depot] = await Promise.all([
+  const [stats, pending, depot, user] = await Promise.all([
     getWarehouseStats(scope),
     getPendingDeliveries(scope),
     scope.userDepotId
       ? prisma.depot.findUnique({ where: { id: scope.userDepotId }, select: { name: true, city: true } })
       : null,
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
   ]);
 
-  const cards = [
-    { label: "Véhicules au dépôt", value: stats.vehiclesInDepot, icon: Package },
-    { label: "Livraisons en attente", value: stats.pendingDeliveries, icon: Truck },
-    { label: "Livrées aujourd'hui", value: stats.deliveredToday, icon: Calendar },
-    { label: "Bons signés uploadés", value: stats.signedUploaded, icon: FileCheck },
-  ];
+  const firstName = user?.name?.split(" ")[0] ?? "Magasinier";
+  const depotLabel = depot ? `${depot.name}${depot.city ? ` · ${depot.city}` : ""}` : "Tous les dépôts";
 
   return (
     <div className="space-y-6">
-      {depot && (
-        <p className="text-sm text-navy-600">
-          Dépôt : <strong>{depot.name}</strong>
-          {depot.city ? ` — ${depot.city}` : ""}
-        </p>
-      )}
+      <DashboardHero
+        eyebrow="Espace magasin"
+        title={`Bonjour, ${firstName}`}
+        description={`Livraisons, stock et sorties véhicules — ${depotLabel}.`}
+        stats={[
+          { label: "En attente", value: String(stats.pendingDeliveries) },
+          { label: "Au dépôt", value: String(stats.vehiclesInDepot) },
+        ]}
+      />
 
-      <Link
-        href="/dashboard/warehouse"
-        className="flex items-center justify-between rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-3 text-sm font-medium text-navy-950 hover:bg-gold-500/15"
-      >
-        Ouvrir le module magasin & livraisons
-        <ArrowRight className="h-4 w-4" />
-      </Link>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <div key={c.label} className="rounded-xl border border-navy-950/10 bg-white p-4 shadow-sm">
-            <c.icon className="h-4 w-4 text-gold-600" />
-            <p className="mt-2 text-2xl font-semibold text-navy-950">{c.value}</p>
-            <p className="text-xs text-navy-600">{c.label}</p>
-          </div>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <QuickAction href="/dashboard/warehouse" label="Module magasin" icon={Warehouse} variant="primary" />
+        <QuickAction href="/dashboard/warehouse?tab=deliveries" label="Livraisons en cours" icon={Truck} />
+        <QuickAction href="/dashboard/warehouse?tab=exit" label="Bons de sortie" icon={ClipboardList} />
       </div>
 
-      <section className="rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase text-navy-600">Prochaines livraisons</h3>
-          <Link href="/dashboard/warehouse" className="text-sm text-gold-700 hover:underline">
-            Voir tout →
-          </Link>
-        </div>
-        <ul className="mt-3 divide-y divide-navy-950/5">
-          {pending.slice(0, 5).length === 0 ? (
-            <li className="py-4 text-sm text-navy-500">Aucune livraison en attente.</li>
-          ) : (
-            pending.slice(0, 5).map((s) => (
-              <li key={s.id} className="flex justify-between gap-2 py-3 text-sm">
-                <div>
-                  <span className="font-medium">{s.reference}</span>
-                  <p className="text-navy-600">{s.client?.name}</p>
-                  <p className="text-xs text-navy-500">{formatVehicleTitle(s.vehicle as never)}</p>
-                </div>
-                <Link href="/dashboard/warehouse" className="text-xs text-gold-700 self-center">
-                  Traiter
-                </Link>
-              </li>
-            ))
-          )}
-        </ul>
-      </section>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          title="Véhicules au dépôt"
+          value={String(stats.vehiclesInDepot)}
+          hint="Stock disponible"
+          icon={Package}
+          accent="navy"
+          href="/dashboard/warehouse"
+        />
+        <KpiCard
+          title="Livraisons en attente"
+          value={String(stats.pendingDeliveries)}
+          hint="À traiter"
+          icon={Truck}
+          accent="amber"
+          href="/dashboard/warehouse?tab=deliveries"
+        />
+        <KpiCard
+          title="Livrées aujourd'hui"
+          value={String(stats.deliveredToday)}
+          hint="Sorties du jour"
+          icon={Calendar}
+          accent="emerald"
+        />
+        <KpiCard
+          title="Bons signés"
+          value={String(stats.signedUploaded)}
+          hint="Documents uploadés"
+          icon={FileCheck}
+          accent="sky"
+        />
+      </div>
+
+      <DashboardPanel
+        title="Prochaines livraisons"
+        subtitle="Véhicules prêts à sortir ou en préparation"
+        action={{ href: "/dashboard/warehouse", label: "Voir tout" }}
+      >
+        {pending.slice(0, 6).length === 0 ? (
+          <EmptyState message="Aucune livraison en attente. Tout est à jour." />
+        ) : (
+          <ActivityList>
+            {pending.slice(0, 6).map((s) => (
+              <ActivityItem
+                key={s.id}
+                href="/dashboard/warehouse"
+                title={s.reference}
+                subtitle={`${s.client?.name ?? "—"} · ${formatVehicleTitle(s.vehicle as never)}`}
+                badge={
+                  <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[10px] font-medium uppercase text-gold-800">
+                    À traiter
+                  </span>
+                }
+              />
+            ))}
+          </ActivityList>
+        )}
+      </DashboardPanel>
     </div>
   );
 }
-

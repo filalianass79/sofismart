@@ -16,25 +16,7 @@ const POLL_MS = 5_000;
 const TOAST_MS = 8_000;
 const ALERT_EVENTS = new Set(["SALE_VALIDATED", "EXIT_VOUCHER_GENERATED", "SALE_VALIDATION_REQUEST"]);
 
-function playNotificationBeep() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = "sine";
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.36);
-    osc.onended = () => void ctx.close();
-  } catch {
-    /* navigateur sans Web Audio ou autoplay bloqué */
-  }
-}
+import { playNotificationBeep } from "@/lib/feedback/sounds";
 
 export function RealtimeNotificationListener() {
   const [toasts, setToasts] = useState<ToastNotif[]>([]);

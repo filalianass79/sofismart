@@ -7,6 +7,7 @@ import { depotSchema, type DepotInput } from "@/lib/validations/depot";
 import { depotTypeLabels, depotStatusLabels } from "@/lib/depot-labels";
 import type { DepotType, DepotStatus } from "@/generated/prisma/enums";
 import { LoadingOverlay, LoadingButtonContent } from "@/components/ui/loading";
+import { useFormFeedback } from "@/hooks/use-form-feedback";
 
 type Manager = { id: string; name: string | null; email: string };
 
@@ -23,8 +24,8 @@ export function DepotForm({
   onSuccess?: () => void;
   onCancel?: () => void;
 }) {
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { handleSubmitInvalid, reportApiError } = useFormFeedback();
 
   const form = useForm<DepotInput>({
     resolver: zodResolver(depotSchema) as never,
@@ -40,7 +41,6 @@ export function DepotForm({
 
   async function onSubmit(data: DepotInput) {
     setLoading(true);
-    setError("");
     const url = depotId ? `/api/depots/${depotId}` : "/api/depots";
     const method = depotId ? "PUT" : "POST";
     const res = await fetch(url, {
@@ -51,7 +51,7 @@ export function DepotForm({
     setLoading(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError((j as { error?: string }).error ?? "Erreur");
+      reportApiError(j, "Erreur enregistrement dépôt");
       return;
     }
     onSuccess?.();
@@ -118,9 +118,8 @@ export function DepotForm({
   );
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="relative space-y-4">
+    <form onSubmit={handleSubmit(onSubmit, handleSubmitInvalid)} className="relative space-y-4">
       {loading && <LoadingOverlay label="Enregistrement en cours…" />}
-      {error && <p className="text-sm text-morocco-600">{error}</p>}
       {fields}
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={loading} className="btn-sofi-primary disabled:opacity-60">
