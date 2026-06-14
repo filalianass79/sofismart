@@ -1,5 +1,6 @@
 import type { PrismaClient } from "../src/generated/prisma/client";
 import type { NotificationEventType } from "../src/generated/prisma/enums";
+import { seedWhatsAppSettings, seedWhatsAppTemplates } from "./seed-whatsapp";
 
 const DEFAULT_SETTINGS: {
   eventType: NotificationEventType;
@@ -125,4 +126,7 @@ export async function seedNotifications(prisma: PrismaClient) {
       },
     });
   }
+
+  await seedWhatsAppTemplates(prisma);
+  await seedWhatsAppSettings(prisma);
 }

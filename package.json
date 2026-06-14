@@ -23,6 +23,7 @@
     "admin:reset": "tsx scripts/reset-admin-password.ts",
     "seed:prod-demo": "tsx scripts/seed-prod-demo.ts",
     "seed:emails": "tsx prisma/seed-emails-only.ts",
+    "seed:whatsapp": "tsx prisma/seed-whatsapp-only.ts",
     "staging": "node scripts/with-env.mjs .env.staging next dev",
     "seed:staging": "node scripts/with-env.mjs .env.staging prisma db seed",
     "demo:documents": "node scripts/generate-demo-documents.mjs",

@@ -15,6 +15,10 @@ export type EmployeeFormData = {
   personalEmail?: string;
   professionalEmail?: string;
   phone?: string;
+  whatsappPhone?: string;
+  whatsappEnabled?: boolean;
+  whatsappConsent?: boolean;
+  preferredNotificationChannel?: "INTERNAL" | "WHATSAPP" | "EMAIL" | "ALL";
   address?: string;
   city?: string;
   birthDate?: string;
@@ -106,6 +110,49 @@ export function EmployeeForm({
         <label className="text-sm">
           <span className="text-navy-700">Téléphone</span>
           <input value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} className="input-sofi mt-1 w-full" />
+        </label>
+        <label className="text-sm">
+          <span className="text-navy-700">Téléphone WhatsApp</span>
+          <input
+            value={form.whatsappPhone ?? ""}
+            onChange={(e) => set("whatsappPhone", e.target.value)}
+            placeholder="2126XXXXXXXX"
+            className="input-sofi mt-1 w-full"
+          />
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.whatsappEnabled ?? false}
+            onChange={(e) => setForm((f) => ({ ...f, whatsappEnabled: e.target.checked }))}
+          />
+          Notifications WhatsApp activées
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.whatsappConsent ?? false}
+            onChange={(e) => setForm((f) => ({ ...f, whatsappConsent: e.target.checked }))}
+          />
+          Consentement WhatsApp (RGPD)
+        </label>
+        <label className="text-sm sm:col-span-2">
+          <span className="text-navy-700">Canal de notification préféré</span>
+          <select
+            value={form.preferredNotificationChannel ?? "ALL"}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                preferredNotificationChannel: e.target.value as EmployeeFormData["preferredNotificationChannel"],
+              }))
+            }
+            className="input-sofi mt-1 w-full"
+          >
+            <option value="ALL">Tous les canaux</option>
+            <option value="INTERNAL">Application uniquement</option>
+            <option value="WHATSAPP">WhatsApp uniquement</option>
+            <option value="EMAIL">Email uniquement</option>
+          </select>
         </label>
         <label className="text-sm">
           <span className="text-navy-700">Email personnel</span>

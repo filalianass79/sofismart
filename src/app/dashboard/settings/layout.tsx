@@ -9,6 +9,7 @@ import {
   Bell,
   ClipboardList,
   Mail,
+  MessageCircle,
   Settings,
   Shield,
   Tag,
@@ -39,6 +40,7 @@ const allTabs = [
   { href: "/dashboard/settings/roles", label: "Rôles", icon: Shield, perm: "roles.view" },
   { href: "/dashboard/settings/audit-logs", label: "Audit", icon: ClipboardList, perm: "parametres.view" },
   { href: "/dashboard/settings/notifications", label: "Notifications", icon: Bell, perm: "notifications.edit" },
+  { href: "/dashboard/settings/whatsapp", label: "WhatsApp", icon: MessageCircle, perm: "whatsapp.view" },
   { href: "/dashboard/settings/email-notifications", label: "Email", icon: Mail, perm: "emails.edit" },
   { href: "/dashboard/settings/email-templates", label: "Templates email", icon: Mail, perm: "emails.view" },
 ];

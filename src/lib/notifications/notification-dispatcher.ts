@@ -5,11 +5,10 @@ import {
   createInternalNotificationsBulk,
   getTemplateForEvent,
 } from "./notification.service";
-import { sendWhatsAppMessage } from "./whatsapp.service";
-import { findUsersByRoleCodes, findWarehouseUsersForDepot, resolveUserPhone } from "./recipients";
-import { normalizePhone } from "./phone";
+import { findUsersByRoleCodes, findWarehouseUsersForDepot } from "./recipients";
 import { enqueueNotificationJob } from "./notification-queue";
 import { dispatchEmailEvent, buildEmailContextFromNotification } from "./email/email-dispatcher";
+import { dispatchWhatsAppEvent } from "@/lib/whatsapp/whatsapp-dispatcher";
 
 function enrichPayload(payload: NotificationPayload): NotificationPayload {
   const base = appBaseUrl();
@@ -83,54 +82,6 @@ async function dispatchInternal(ctx: DispatchContext, userIds: string[], payload
   });
 }
 
-async function dispatchWhatsApp(
-  ctx: DispatchContext,
-  userIds: string[],
-  payload: NotificationPayload,
-) {
-  const setting = await prisma.notificationSetting.findUnique({
-    where: { eventType: ctx.eventType },
-  });
-  if (setting && !setting.whatsappEnabled) return;
-
-  const template = await getTemplateForEvent(ctx.eventType, "WHATSAPP");
-  const body = template
-    ? renderTemplate(template.body, payload)
-    : (payload.whatsappMessage as string) || (payload.message as string);
-  if (!body?.trim()) return;
-
-  if (setting?.sendToEmployee !== false) {
-    for (const userId of userIds) {
-      const prefs = await prisma.userNotificationPreference.findUnique({ where: { userId } });
-      if (prefs && (!prefs.whatsappEnabled || !prefs.whatsappOptIn)) continue;
-      const phone = await resolveUserPhone(userId);
-      if (!phone) continue;
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
-      await sendWhatsAppMessage({
-        to: phone,
-        message: body,
-        recipientUserId: userId,
-        recipientName: user?.name,
-        eventType: ctx.eventType,
-        templateKey: template?.key,
-      });
-    }
-  }
-
-  if (setting?.sendToClient && ctx.clientPhones?.length) {
-    for (const raw of ctx.clientPhones) {
-      const phone = normalizePhone(raw);
-      if (!phone) continue;
-      await sendWhatsAppMessage({
-        to: phone,
-        message: body,
-        eventType: ctx.eventType,
-        templateKey: template?.key,
-      });
-    }
-  }
-}
-
 export async function dispatchNotificationEvent(ctx: DispatchContext): Promise<void> {
   const setting = await prisma.notificationSetting.findUnique({
     where: { eventType: ctx.eventType },
@@ -141,7 +92,14 @@ export async function dispatchNotificationEvent(ctx: DispatchContext): Promise<v
   const userIds = await resolveRecipientUserIds(ctx);
 
   await dispatchInternal(ctx, userIds, payload);
-  await dispatchWhatsApp(ctx, userIds, payload);
+  dispatchWhatsAppEvent({
+    eventType: ctx.eventType,
+    payload: payload as Record<string, string | number | undefined | null>,
+    userIds,
+    depotId: ctx.depotId,
+    commercialId: typeof ctx.payload.commercialId === "string" ? ctx.payload.commercialId : undefined,
+    clientPhones: ctx.clientPhones,
+  });
   await dispatchEmailEvent(buildEmailContextFromNotification(ctx));
 }
 

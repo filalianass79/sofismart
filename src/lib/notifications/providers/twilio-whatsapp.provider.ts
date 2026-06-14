@@ -1,6 +1,6 @@
-import type { WhatsAppProvider } from "../whatsapp.provider";
-import { isWhatsAppTestMode } from "../whatsapp.provider";
-import type { WhatsAppSendResult } from "../types";
+import type { WhatsAppProvider } from "@/lib/whatsapp/whatsapp.provider";
+import { isWhatsAppTestMode } from "@/lib/whatsapp/whatsapp.provider";
+import type { WhatsAppSendResult } from "@/lib/whatsapp/types";
 
 export class TwilioWhatsAppProvider implements WhatsAppProvider {
   readonly name = "twilio";
@@ -39,5 +39,15 @@ export class TwilioWhatsAppProvider implements WhatsAppProvider {
       return { messageId: "", status: "FAILED", error: data.message ?? `HTTP ${res.status}` };
     }
     return { messageId: data.sid ?? "", status: "SENT" };
+  }
+
+  async sendTemplateMessage(
+    to: string,
+    templateName: string,
+    _language: string,
+    parameters: string[],
+  ): Promise<WhatsAppSendResult> {
+    const body = `[Template: ${templateName}]\n${parameters.join("\n")}`;
+    return this.sendTextMessage(to, body);
   }
 }

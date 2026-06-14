@@ -12,7 +12,12 @@ export type RecipientUser = {
 function mapUser(u: {
   id: string;
   name: string | null;
-  employee: { phone: string | null } | null;
+  employee: {
+    phone: string | null;
+    whatsappPhone?: string | null;
+    whatsappEnabled?: boolean;
+    whatsappConsent?: boolean;
+  } | null;
   notificationPreferences: {
     phoneOverride: string | null;
     whatsappOptIn: boolean;
@@ -24,7 +29,7 @@ function mapUser(u: {
   return {
     id: u.id,
     name: u.name,
-    phone: prefs?.phoneOverride ?? u.employee?.phone ?? null,
+    phone: prefs?.phoneOverride ?? u.employee?.whatsappPhone ?? u.employee?.phone ?? null,
     whatsappOptIn: prefs?.whatsappOptIn ?? false,
     whatsappEnabled: prefs?.whatsappEnabled ?? true,
     internalEnabled: prefs?.internalEnabled ?? true,
@@ -44,7 +49,7 @@ export async function findUsersByRoleCodes(codes: string[]): Promise<RecipientUs
     select: {
       id: true,
       name: true,
-      employee: { select: { phone: true } },
+      employee: { select: { phone: true, whatsappPhone: true, whatsappEnabled: true, whatsappConsent: true } },
       notificationPreferences: true,
     },
   });
@@ -75,7 +80,7 @@ export async function findWarehouseUsersForDepot(depotId: string): Promise<Recip
     select: {
       id: true,
       name: true,
-      employee: { select: { phone: true } },
+      employee: { select: { phone: true, whatsappPhone: true, whatsappEnabled: true, whatsappConsent: true } },
       notificationPreferences: true,
     },
   });
@@ -86,11 +91,11 @@ export async function resolveUserPhone(userId: string): Promise<string | null> {
   const u = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      employee: { select: { phone: true } },
+      employee: { select: { phone: true, whatsappPhone: true, whatsappEnabled: true, whatsappConsent: true } },
       notificationPreferences: { select: { phoneOverride: true } },
     },
   });
-  const raw = u?.notificationPreferences?.phoneOverride ?? u?.employee?.phone ?? null;
+  const raw = u?.notificationPreferences?.phoneOverride ?? u?.employee?.whatsappPhone ?? u?.employee?.phone ?? null;
   const { normalizePhone } = await import("./phone");
   return normalizePhone(raw);
 }
