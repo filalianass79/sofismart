@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { DashboardHeaderUser } from "@/components/dashboard-header-user";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { RealtimeNotificationListener } from "@/components/notifications/realtime-notification-listener";
 import { StagingAppTitle, StagingFooterNote } from "@/components/staging/staging-chrome";
 import { MobileHeader } from "./MobileHeader";
 import { MobileSidebar } from "./MobileSidebar";
@@ -49,6 +50,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
             </header>
 
             <main className="flex-1 p-4 sm:p-6">{children}</main>
+            <RealtimeNotificationListener />
             <StagingFooterNote />
           </div>
         </div>

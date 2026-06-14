@@ -26,7 +26,12 @@ export function NotificationBell() {
   useEffect(() => {
     load();
     const t = setInterval(load, 60_000);
-    return () => clearInterval(t);
+    const onUpdate = () => void load();
+    window.addEventListener("sofismart:notifications-updated", onUpdate);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("sofismart:notifications-updated", onUpdate);
+    };
   }, [load]);
 
   async function markRead(id: string) {

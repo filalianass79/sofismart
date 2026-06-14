@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -26,7 +26,12 @@ const STEPS: StepItem[] = [
   { id: "summary", label: "Récap", hint: "Validation" },
 ];
 
-type Commercial = { id: string; name: string | null };
+type Commercial = {
+  id: string;
+  name: string;
+  jobFunctionLabel?: string;
+  reference?: string;
+};
 
 function firstFormError(errors: FieldErrors): string | null {
   for (const value of Object.values(errors)) {
@@ -97,7 +102,7 @@ export function SaleWizard({
     },
   });
 
-  const { register, watch, handleSubmit, control, trigger } = form;
+  const { register, watch, handleSubmit, control, trigger, setValue } = form;
   const { fields, append, remove } = useFieldArray({ control, name: "payments" });
 
   const clientMode = watch("clientMode");
@@ -108,6 +113,15 @@ export function SaleWizard({
   const discount = watch("discount");
   const taxRatePercent = watch("taxRatePercent");
   const commercialId = watch("commercialId");
+
+  useEffect(() => {
+    if (!defaultCommercialId) return;
+    const current = form.getValues("commercialId");
+    const valid = commercials.some((c) => c.id === current);
+    if (!current || !valid) {
+      setValue("commercialId", defaultCommercialId, { shouldValidate: true });
+    }
+  }, [commercials, defaultCommercialId, form, setValue]);
 
   const clientLabel =
     clientMode === "EXISTING"
@@ -254,12 +268,14 @@ export function SaleWizard({
                 <span className="text-navy-700">Date vente</span>
                 <input type="date" {...register("saleDate")} className="input-sofi mt-1 w-full" />
               </label>
-              <label className="text-sm">
-                <span className="text-navy-700">Commercial *</span>
+              <label className="text-sm sm:col-span-2">
+                <span className="text-navy-700">Commercial responsable *</span>
                 <select {...register("commercialId")} className="input-sofi mt-1 w-full">
                   {commercials.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
+                      {c.jobFunctionLabel ? ` — ${c.jobFunctionLabel}` : ""}
+                      {c.reference && c.reference !== "—" ? ` (${c.reference})` : ""}
                     </option>
                   ))}
                 </select>

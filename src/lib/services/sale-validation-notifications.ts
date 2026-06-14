@@ -57,9 +57,15 @@ export async function notifyValidatorsOfSaleRequest(saleId: string) {
 export async function notifyCommercialSaleValidated(saleId: string) {
   const sale = await prisma.sale.findUnique({
     where: { id: saleId },
-    select: { id: true, reference: true, commercialId: true },
+    include: {
+      client: { select: { name: true } },
+      vehicle: { include: { brand: true, carModel: true, depot: true } },
+    },
   });
   if (!sale?.commercialId) return;
+
+  const vehicleLabel = formatVehicleTitle(sale.vehicle);
+  const depotName = sale.vehicle.depot?.name ?? "—";
 
   dispatchNotificationEventAsync({
     eventType: "SALE_VALIDATED",
@@ -69,8 +75,14 @@ export async function notifyCommercialSaleValidated(saleId: string) {
     category: "SUCCESS",
     payload: {
       title: "Vente validée",
-      message: `La vente ${sale.reference} a été validée. Vous pouvez télécharger la facture de vente et le bon de sortie.`,
+      message: `La vente ${sale.reference} a été validée — ${sale.client?.name ?? "client"} — ${vehicleLabel}. Facture et bon de sortie disponibles.`,
       saleReference: sale.reference,
+      clientName: sale.client?.name ?? "",
+      vehicleLabel,
+      vehicleBrand: sale.vehicle.brand.label,
+      vehicleModel: sale.vehicle.carModel.label,
+      registrationNumber: sale.vehicle.plate ?? "",
+      depotName,
       actionUrl: `/dashboard/sales/${saleId}`,
     },
   });
