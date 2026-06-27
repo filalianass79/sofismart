@@ -20,6 +20,7 @@ export const PERMISSION_MODULES = [
   "whatsapp",
   "emails",
   "proformas",
+  "caisse",
 ] as const;
 
 export const PERMISSION_ACTIONS = [
@@ -110,6 +111,14 @@ export const LEGACY_PERMISSION_MAP: Record<string, PermissionKey[]> = {
     "utilisateurs.manage_permissions",
   ],
   "expenses:*": ["paiements.view", "rapports.view"],
+  "cashbox:*": [
+    "caisse.view",
+    "caisse.create",
+    "caisse.edit",
+    "caisse.delete",
+    "caisse.export",
+    "caisse.validate",
+  ],
 };
 
 export const DEFAULT_ROLE_CODES = [

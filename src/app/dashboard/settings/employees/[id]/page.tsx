@@ -6,6 +6,8 @@ import { hasPermission, loadUserPermissions } from "@/lib/rbac/has-permission";
 import { jobFunctionLabels } from "@/lib/employee-labels";
 import { EmployeeStatusBadge } from "@/components/hr/employee-status-badge";
 import { UserStatusBadge } from "@/components/hr/user-status-badge";
+import { EmployeeCashboxTab } from "@/components/treasury/employee-cashbox-tab";
+import { getEmployeeCashboxSummary } from "@/lib/services/cashbox-service";
 import type { EmployeeJobFunction } from "@/generated/prisma/enums";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -24,6 +26,9 @@ export default async function EmployeeDetailPage({ params }: Props) {
     include: { depot: true, user: { include: { appRole: true } }, documents: true },
   });
   if (!employee) notFound();
+
+  const canViewCaisse = hasPermission(perms, "caisse.view");
+  const cashboxSummary = canViewCaisse ? await getEmployeeCashboxSummary(id) : null;
 
   return (
     <div className="space-y-6">
@@ -114,6 +119,17 @@ export default async function EmployeeDetailPage({ params }: Props) {
         <section className="rounded-xl border border-navy-950/10 bg-white p-5 text-sm text-navy-700">
           <h3 className="mb-2 font-semibold text-navy-900">Notes</h3>
           {employee.notes}
+        </section>
+      )}
+
+      {canViewCaisse && cashboxSummary && (
+        <section className="rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
+          <h3 className="mb-3 font-semibold text-navy-900">Caisse</h3>
+          <EmployeeCashboxTab
+            boxes={cashboxSummary.boxes}
+            pendingTransfers={cashboxSummary.pendingTransfers}
+            sentTransfers={cashboxSummary.sentTransfers}
+          />
         </section>
       )}
     </div>

@@ -36,6 +36,7 @@ type Row = {
   purchaseId?: string | null;
   sale: { reference: string } | null;
   purchase: { reference: string } | null;
+  cashbox?: { name: string; reference: string } | null;
   overdue?: boolean;
 };
 
@@ -218,6 +219,9 @@ export function PaymentsList() {
                     value={format(new Date(p.paidAt), "dd/MM/yyyy", { locale: fr })}
                   />
                   <ListCardField label="Lié" value={p.sale?.reference ?? p.purchase?.reference ?? "—"} />
+                  {p.cashbox && (
+                    <ListCardField label="Caisse" value={`${p.cashbox.reference} — ${p.cashbox.name}`} fullWidth />
+                  )}
                   <ListCardField label="Montant" value={formatMoney(Number(p.amount))} />
                   <ListCardField label="Statut" value={paymentValidationLabels[p.validationStatus]} />
                   <ListCardField

@@ -27,11 +27,13 @@ export function PaymentWizard({
   suppliers,
   sales,
   purchases,
+  cashboxes,
 }: {
   clients: Option[];
   suppliers: Option[];
   sales: Option[];
   purchases: Option[];
+  cashboxes: Option[];
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -53,6 +55,7 @@ export function PaymentWizard({
 
   const { register, watch, handleSubmit } = form;
   const category = watch("category") as PaymentCategory;
+  const method = watch("method");
   const values = watch();
 
   const clientLabel = clients.find((c) => c.id === values.clientId)?.label;
@@ -206,6 +209,24 @@ export function PaymentWizard({
             Notes
             <textarea {...register("notes")} rows={2} className="input-sofi mt-1 w-full" />
           </label>
+          {cashboxes.length > 0 && (
+            <label className="text-sm sm:col-span-2">
+              Caisse {method === "CASH" ? "*" : "(optionnel)"}
+              <select {...register("cashboxId")} className="input-sofi mt-1 w-full" required={method === "CASH"}>
+                <option value="">— {method === "CASH" ? "Choisir une caisse" : "Aucune"} —</option>
+                {cashboxes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-navy-500">
+                {method === "CASH"
+                  ? "Obligatoire en espèces — crédit client ou débit fournisseur selon le type."
+                  : "Lie le paiement au journal de caisse si renseigné."}
+              </span>
+            </label>
+          )}
         </section>
       )}
 
@@ -217,6 +238,11 @@ export function PaymentWizard({
           <p>
             <strong>Montant :</strong> {formatMoney(Number(values.amount))}
           </p>
+          {values.cashboxId && (
+            <p>
+              <strong>Caisse :</strong> {cashboxes.find((c) => c.id === values.cashboxId)?.label ?? "—"}
+            </p>
+          )}
           <p>
             <strong>Mode :</strong> {values.method}
           </p>

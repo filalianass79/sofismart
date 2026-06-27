@@ -3,6 +3,7 @@ import type { PrismaClient } from "../src/generated/prisma/client";
 import { linkLegacyUsers, seedRbac } from "./seed-rbac";
 import { seedNotifications } from "./seed-notifications";
 import { seedEmails } from "./seed-emails";
+import { seedCashCategories } from "./seed-treasury";
 
 /**
  * Seed minimal production : RBAC + admin initial (via variables d'environnement).
@@ -11,6 +12,7 @@ export async function seedProduction(prisma: PrismaClient) {
   await seedRbac(prisma);
   await seedNotifications(prisma);
   await seedEmails(prisma);
+  await seedCashCategories(prisma);
 
   const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@sofismart.com")
     .toLowerCase()

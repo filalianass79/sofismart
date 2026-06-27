@@ -6,6 +6,7 @@ import { linkLegacyUsers, seedRbac } from "./seed-rbac";
 import { seedNotifications } from "./seed-notifications";
 import { seedEmails } from "./seed-emails";
 import { seedDemoData } from "./seed-demo-data";
+import { seedCashCategories } from "./seed-treasury";
 import { seedProduction } from "./seed-production";
 import { seedStaging } from "./seed-staging";
 
@@ -35,6 +36,7 @@ async function main() {
   await seedRbac(prisma);
   await seedNotifications(prisma);
   await seedEmails(prisma);
+  await seedCashCategories(prisma);
   const adminRole = await prisma.role.findUniqueOrThrow({
     where: { code: "ADMIN" },
   });

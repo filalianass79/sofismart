@@ -23,6 +23,7 @@ import {
   ClipboardList,
   Bell,
   Mail,
+  Wallet,
 } from "lucide-react";
 import type { Permission } from "@/lib/permissions";
 
@@ -67,6 +68,8 @@ export const NAV_LEGACY_PERM: Record<string, Permission> = {
   "clients.view": "clients:*",
   "fournisseurs.view": "suppliers:*",
   "paiements.view": "payments:*",
+  "caisse.view": "payments:*",
+  "caisse.create": "payments:*",
   "documents.view": "documents:*",
   "rapports.view": "reports:*",
   "magasin.view": "warehouse:*",
@@ -170,6 +173,20 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     children: [
       { id: "payments-list", href: "/dashboard/payments", label: "Liste paiements" },
       { id: "payments-new", href: "/dashboard/payments/new", label: "Nouveau paiement" },
+    ],
+  },
+  {
+    id: "treasury",
+    href: "/dashboard/treasury",
+    label: "Trésorerie",
+    icon: Wallet,
+    perm: "caisse.view",
+    activePrefix: "/dashboard/treasury",
+    children: [
+      { id: "treasury-dashboard", href: "/dashboard/treasury", label: "Tableau de bord" },
+      { id: "treasury-cashboxes", href: "/dashboard/treasury/cashboxes", label: "Caisses" },
+      { id: "treasury-cashboxes-new", href: "/dashboard/treasury/cashboxes/new", label: "Nouvelle caisse", perm: "caisse.create" },
+      { id: "treasury-transfers", href: "/dashboard/treasury/cash-transfers", label: "Transferts" },
     ],
   },
   {

@@ -226,6 +226,10 @@ enum NotificationEventType {
   ACCOUNT_BLOCKED
   DOCUMENT_UPLOADED
   ACTION_REQUIRES_VALIDATION
+  CASH_TRANSFER_PENDING
+  CASH_TRANSFER_ACCEPTED
+  CASH_TRANSFER_REJECTED
+  CASH_MOVEMENT_PENDING
 }
 
 enum EmailMessageStatus {
@@ -601,6 +605,9 @@ model Employee {
   user              User?
   documents         EmployeeDocument[]
   whatsappMessages  WhatsAppMessage[]   @relation("WhatsAppEmployeeRecipient")
+  cashboxes         Cashbox[]           @relation("EmployeeCashboxes")
+  transfersSent     CashTransfer[]      @relation("TransferSenderEmployee")
+  transfersReceived CashTransfer[]      @relation("TransferReceiverEmployee")
 }
 
 model EmployeeDocument {
@@ -753,6 +760,14 @@ model User {
   generatedDocuments  GeneratedDocument[]  @relation("GeneratedDocuments")
   documentHistoryActs DocumentHistory[]    @relation("DocumentHistoryActor")
   invoiceImports      InvoiceImport[]      @relation("InvoiceImportUploader")
+  cashboxesCreated    Cashbox[]            @relation("CashboxCreator")
+  cashMovementsCreated CashMovement[]      @relation("CashMovementCreator")
+  cashMovementsValidated CashMovement[]    @relation("CashMovementValidator")
+  cashMovementsCancelled CashMovement[]    @relation("CashMovementCanceller")
+  cashTransfersCreated CashTransfer[]      @relation("CashTransferCreator")
+  cashTransfersReceived CashTransfer[]     @relation("CashTransferReceiver")
+  cashTransfersRejected CashTransfer[]     @relation("CashTransferRejecter")
+  cashDocumentsUploaded CashDocument[]    @relation("CashDocumentUploader")
 }
 
 // ——— Dépôts ———
@@ -780,6 +795,7 @@ model Depot {
   sales         Sale[]          @relation("SaleDepot")
   exitVouchers  ExitVoucher[]
   deliveryNotes DeliveryNote[]
+  cashboxes     Cashbox[]       @relation("DepotCashboxes")
 }
 
 // ——— Fournisseurs & clients ———
@@ -1614,9 +1630,12 @@ model Payment {
   sale              Sale?                    @relation("SalePayments", fields: [saleId], references: [id], onDelete: SetNull)
   clientId          String?
   client            Client?                  @relation("ClientPayments", fields: [clientId], references: [id], onDelete: SetNull)
+  cashboxId         String?
+  cashbox           Cashbox?                 @relation("PaymentCashbox", fields: [cashboxId], references: [id], onDelete: SetNull)
   createdAt         DateTime                 @default(now())
   updatedAt         DateTime                 @updatedAt
   documents         Document[]               @relation("PaymentDocuments")
+  cashMovements     CashMovement[]           @relation("PaymentCashMovements")
 }
 
 // ——— Documents ———
@@ -1748,6 +1767,213 @@ model Expense {
   category  String?
   notes     String?  @db.Text
   createdAt DateTime @default(now())
+}
+
+// ——— Trésorerie / Caisses ———
+
+enum CashboxType {
+  EMPLOYEE
+  DEPOT
+  MAIN
+  TEMPORARY
+}
+
+enum CashboxStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  CLOSED
+}
+
+enum CashMovementType {
+  CREDIT
+  DEBIT
+  TRANSFER_OUT
+  TRANSFER_IN
+  ADJUSTMENT
+  REVERSAL
+}
+
+enum CashMovementStatus {
+  DRAFT
+  PENDING_VALIDATION
+  VALIDATED
+  REJECTED
+  CANCELLED
+  REVERSED
+}
+
+enum CashMovementDirection {
+  IN
+  OUT
+}
+
+enum CashTransferStatus {
+  PENDING_RECEPTION
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum CashDocumentType {
+  RECEIPT
+  INVOICE
+  VOUCHER
+  PHOTO
+  OTHER
+}
+
+enum CashCategoryType {
+  CREDIT
+  DEBIT
+  BOTH
+}
+
+model Cashbox {
+  id               String         @id @default(cuid())
+  reference        String         @unique
+  name             String
+  type             CashboxType    @default(EMPLOYEE)
+  employeeId       String?
+  employee         Employee?      @relation("EmployeeCashboxes", fields: [employeeId], references: [id], onDelete: SetNull)
+  depotId          String?
+  depot            Depot?         @relation("DepotCashboxes", fields: [depotId], references: [id], onDelete: SetNull)
+  currency         Currency       @default(MAD)
+  initialBalance   Decimal        @default(0) @db.Decimal(14, 2)
+  currentBalance   Decimal        @default(0) @db.Decimal(14, 2)
+  authorizedLimit  Decimal?       @db.Decimal(14, 2)
+  status           CashboxStatus  @default(ACTIVE)
+  description      String?        @db.Text
+  openedAt         DateTime       @default(now())
+  closedAt         DateTime?
+  createdById      String?
+  createdBy        User?          @relation("CashboxCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  movements        CashMovement[]
+  transfersOut     CashTransfer[] @relation("TransferSourceCashbox")
+  transfersIn      CashTransfer[] @relation("TransferDestCashbox")
+  documents        CashDocument[]
+  payments         Payment[]        @relation("PaymentCashbox")
+
+  @@index([status])
+  @@index([employeeId])
+  @@index([depotId])
+  @@index([type])
+}
+
+model CashMovement {
+  id                String                @id @default(cuid())
+  reference         String                @unique
+  cashboxId         String
+  cashbox           Cashbox               @relation(fields: [cashboxId], references: [id], onDelete: Restrict)
+  type              CashMovementType
+  status            CashMovementStatus    @default(PENDING_VALIDATION)
+  amount            Decimal               @db.Decimal(14, 2)
+  direction         CashMovementDirection
+  operationDate     DateTime              @default(now())
+  category          String?
+  reason            String
+  paymentMethod     String?
+  externalReference String?
+  relatedSaleId     String?
+  relatedPurchaseId String?
+  relatedPaymentId  String?
+  relatedPayment    Payment?              @relation("PaymentCashMovements", fields: [relatedPaymentId], references: [id], onDelete: SetNull)
+  transferId        String?
+  transfer          CashTransfer?         @relation(fields: [transferId], references: [id], onDelete: SetNull)
+  balanceBefore     Decimal?              @db.Decimal(14, 2)
+  balanceAfter      Decimal?              @db.Decimal(14, 2)
+  createdById       String?
+  createdBy         User?                 @relation("CashMovementCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  validatedById     String?
+  validatedBy       User?                 @relation("CashMovementValidator", fields: [validatedById], references: [id], onDelete: SetNull)
+  validatedAt       DateTime?
+  cancelledById     String?
+  cancelledBy       User?                 @relation("CashMovementCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  cancelledAt       DateTime?
+  cancellationReason String?              @db.Text
+  reversedMovementId String?
+  notes             String?               @db.Text
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  documents         CashDocument[]
+
+  @@index([cashboxId, operationDate])
+  @@index([status])
+  @@index([transferId])
+  @@index([relatedPaymentId])
+}
+
+model CashTransfer {
+  id                   String             @id @default(cuid())
+  reference            String             @unique
+  transferCode         String             @unique
+  sourceCashboxId      String
+  sourceCashbox        Cashbox            @relation("TransferSourceCashbox", fields: [sourceCashboxId], references: [id], onDelete: Restrict)
+  destinationCashboxId String
+  destinationCashbox   Cashbox            @relation("TransferDestCashbox", fields: [destinationCashboxId], references: [id], onDelete: Restrict)
+  senderEmployeeId     String?
+  senderEmployee       Employee?          @relation("TransferSenderEmployee", fields: [senderEmployeeId], references: [id], onDelete: SetNull)
+  receiverEmployeeId   String?
+  receiverEmployee     Employee?          @relation("TransferReceiverEmployee", fields: [receiverEmployeeId], references: [id], onDelete: SetNull)
+  amount               Decimal            @db.Decimal(14, 2)
+  status               CashTransferStatus @default(PENDING_RECEPTION)
+  reason               String
+  notes                String?            @db.Text
+  sentAt               DateTime           @default(now())
+  receivedAt           DateTime?
+  rejectedAt           DateTime?
+  rejectionReason      String?            @db.Text
+  createdById          String?
+  createdBy            User?              @relation("CashTransferCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  receivedById         String?
+  receivedBy           User?              @relation("CashTransferReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
+  rejectedById         String?
+  rejectedBy           User?              @relation("CashTransferRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  movements            CashMovement[]
+  documents            CashDocument[]
+
+  @@index([status])
+  @@index([sourceCashboxId])
+  @@index([destinationCashboxId])
+  @@index([receiverEmployeeId])
+}
+
+model CashDocument {
+  id           String           @id @default(cuid())
+  cashboxId    String?
+  cashbox      Cashbox?         @relation(fields: [cashboxId], references: [id], onDelete: SetNull)
+  movementId   String?
+  movement     CashMovement?    @relation(fields: [movementId], references: [id], onDelete: Cascade)
+  transferId   String?
+  transfer     CashTransfer?    @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  type         CashDocumentType @default(OTHER)
+  title        String?
+  fileName     String
+  fileUrl      String
+  fileMimeType String?
+  fileSize     Int?
+  uploadedById String?
+  uploadedBy   User?            @relation("CashDocumentUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime         @default(now())
+
+  @@index([movementId])
+  @@index([transferId])
+}
+
+model CashCategory {
+  id                 String           @id @default(cuid())
+  name               String
+  type               CashCategoryType @default(BOTH)
+  requiresAttachment Boolean          @default(false)
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@unique([name, type])
 }
 
 // ——— Mouvements de stock / transferts ———

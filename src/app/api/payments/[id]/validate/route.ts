@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requirePermissionFresh } from "@/lib/api-auth";
-import { syncLinkedRecords } from "@/lib/services/payment-service";
+import { validatePayment } from "@/lib/services/payment-service";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -10,10 +9,10 @@ export async function POST(_req: Request, { params }: Params) {
   if ("response" in gate) return gate.response;
   const { id } = await params;
 
-  const payment = await prisma.payment.update({
-    where: { id },
-    data: { validationStatus: "VALIDATED" },
-  });
-  await syncLinkedRecords(id);
-  return NextResponse.json(payment);
+  try {
+    const payment = await validatePayment(id, gate.session.user.id);
+    return NextResponse.json(payment);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+  }
 }

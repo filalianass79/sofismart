@@ -17,6 +17,10 @@ export const paymentWizardSchema = z.object({
   dueDate: z.string().optional().nullable(),
   notes: z.string().optional(),
   validationStatus: z.enum(["PENDING", "VALIDATED"]).default("VALIDATED"),
+  cashboxId: z.string().optional().nullable(),
+}).refine((d) => d.method !== "CASH" || !!d.cashboxId, {
+  message: "Caisse obligatoire pour un paiement en espèces",
+  path: ["cashboxId"],
 });
 
 export type PaymentWizardValues = z.infer<typeof paymentWizardSchema>;

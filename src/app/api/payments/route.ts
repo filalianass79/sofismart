@@ -47,6 +47,12 @@ export async function GET(req: Request) {
       supplier: { select: { name: true } },
       sale: { select: { reference: true } },
       purchase: { select: { reference: true } },
+      cashbox: { select: { id: true, name: true, reference: true } },
+      cashMovements: {
+        where: { status: "VALIDATED", type: { in: ["CREDIT", "DEBIT"] } },
+        take: 1,
+        select: { id: true, reference: true },
+      },
     },
   });
 
@@ -72,7 +78,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const payment = await createPaymentFromWizard(parsed.data);
+    const payment = await createPaymentFromWizard(parsed.data, gate.session.user.id);
     return NextResponse.json(payment, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 });
