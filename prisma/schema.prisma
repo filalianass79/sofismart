@@ -956,6 +956,24 @@ model Brand {
   vehicles  Vehicle[]
 }
 
+model CreditOrganization {
+  id        String            @id @default(cuid())
+  name      String            @unique
+  code      String?           @unique
+  phone     String?
+  email     String?
+  address   String?
+  city      String?
+  isActive  Boolean           @default(true)
+  notes     String?           @db.Text
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  sales     Sale[]
+  proformas ProformaInvoice[]
+
+  @@index([isActive])
+}
+
 model VehicleModel {
   id        String   @id @default(cuid())
   label     String
@@ -1204,6 +1222,8 @@ model Sale {
   warrantyDurationMonths Int?
   specialConditions     String?            @db.Text
   draftClient           Json?
+  creditOrganizationId  String?
+  creditOrganization    CreditOrganization? @relation(fields: [creditOrganizationId], references: [id], onDelete: SetNull)
   cancelReason          String?            @db.Text
   notes                 String?            @db.Text
   invoiceNumber         String?            @unique
@@ -1221,6 +1241,7 @@ model Sale {
   @@index([status, saleDate])
   @@index([commercialId, status])
   @@index([clientId])
+  @@index([creditOrganizationId])
 }
 
 model ProformaInvoice {
@@ -1243,6 +1264,8 @@ model ProformaInvoice {
   totalTTC             Decimal         @default(0) @db.Decimal(14, 2)
   paymentTerms         String?         @db.Text
   observations         String?         @db.Text
+  creditOrganizationId String?
+  creditOrganization   CreditOrganization? @relation(fields: [creditOrganizationId], references: [id], onDelete: SetNull)
   status               ProformaStatus  @default(DRAFT)
   pdfUrl               String?
   generatedAt          DateTime?
@@ -1262,6 +1285,7 @@ model ProformaInvoice {
   @@index([clientId])
   @@index([vehicleId])
   @@index([validityDate])
+  @@index([creditOrganizationId])
 }
 
 model ProformaLine {

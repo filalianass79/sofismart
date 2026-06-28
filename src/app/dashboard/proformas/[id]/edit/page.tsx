@@ -23,6 +23,8 @@ export default async function EditProformaPage({ params }: { params: Promise<{ i
     clientId: row.clientId ?? "",
     newClient: row.temporaryClientData as never,
     vehicleId: row.vehicleId,
+    financedByCreditOrg: !!row.creditOrganizationId,
+    creditOrganizationId: row.creditOrganizationId ?? "",
     commercialId: row.commercialId,
     proformaDate: row.proformaDate.toISOString().slice(0, 10),
     validityDate: row.validityDate.toISOString().slice(0, 10),

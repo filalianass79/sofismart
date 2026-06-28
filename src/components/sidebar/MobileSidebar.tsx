@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { memo, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { AppLogo } from "@/components/ui/app-logo";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-context";
 import { SidebarNav } from "./SidebarNav";
@@ -57,11 +58,8 @@ export const MobileSidebar = memo(function MobileSidebar() {
         }}
       >
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
-          <Link href="/dashboard" onClick={closeMobile} className="font-display text-xl text-white">
-            <span>Sofi</span>
-            <span className="bg-gradient-to-r from-gold-300 to-gold-500 bg-clip-text text-transparent">
-              Smart
-            </span>
+          <Link href="/dashboard" onClick={closeMobile} className="flex items-center">
+            <AppLogo size="sidebar" />
           </Link>
           <button
             type="button"

@@ -9,11 +9,13 @@ import { loadProformaDocumentData } from "@/lib/documents/proforma-loader";
 import { createAuditLog } from "@/lib/audit";
 import type { ProformaHistoryAction, ProformaStatus } from "@/generated/prisma/enums";
 import type { ProformaWizardValues } from "@/lib/validations/proforma";
+import { resolveCreditOrganizationId } from "@/lib/validations/credit-organization";
 import type { Prisma } from "@/generated/prisma/client";
 import { formatVehicleTitle } from "@/lib/vehicle-catalog";
 
 const proformaInclude = {
   client: true,
+  creditOrganization: true,
   vehicle: { include: { brand: true, carModel: true, depot: true } },
   commercial: true,
   createdBy: true,
@@ -38,6 +40,14 @@ function resolveClientPayload(payload: ProformaWizardValues) {
     return { clientId: payload.clientId!, temporaryClientData: undefined };
   }
   return { clientId: null, temporaryClientData: payload.newClient as Prisma.InputJsonValue };
+}
+
+async function assertCreditOrganizationForProforma(payload: ProformaWizardValues) {
+  const id = resolveCreditOrganizationId(payload);
+  if (!id) return null;
+  const org = await prisma.creditOrganization.findFirst({ where: { id, isActive: true } });
+  if (!org) throw new Error("Organisme de crédit invalide ou inactif");
+  return id;
 }
 
 function buildVehicleLineDesignation(vehicle: {
@@ -133,6 +143,7 @@ export async function createProforma(payload: ProformaWizardValues, userId: stri
   const amounts = computeProformaAmounts(payload);
   const reference = await nextProformaReference(prisma);
   const { clientId, temporaryClientData } = resolveClientPayload(payload);
+  const creditOrganizationId = await assertCreditOrganizationForProforma(payload);
   const designation = buildVehicleLineDesignation(vehicle);
 
   const proforma = await prisma.$transaction(async (tx) => {
@@ -141,6 +152,7 @@ export async function createProforma(payload: ProformaWizardValues, userId: stri
         reference,
         clientId,
         temporaryClientData,
+        creditOrganizationId,
         vehicleId: payload.vehicleId,
         commercialId: payload.commercialId,
         proformaDate: new Date(payload.proformaDate),
@@ -208,6 +220,7 @@ export async function updateProforma(id: string, payload: ProformaWizardValues, 
   const vehicle = await assertVehicleAvailableForProforma(payload.vehicleId);
   const amounts = computeProformaAmounts(payload);
   const { clientId, temporaryClientData } = resolveClientPayload(payload);
+  const creditOrganizationId = await assertCreditOrganizationForProforma(payload);
   const designation = buildVehicleLineDesignation(vehicle);
 
   await prisma.$transaction(async (tx) => {
@@ -217,6 +230,7 @@ export async function updateProforma(id: string, payload: ProformaWizardValues, 
       data: {
         clientId,
         temporaryClientData,
+        creditOrganizationId,
         vehicleId: payload.vehicleId,
         commercialId: payload.commercialId,
         proformaDate: new Date(payload.proformaDate),
@@ -332,6 +346,7 @@ export async function convertProformaToSale(id: string, userId: string, canValid
         reference,
         vehicleId: proforma.vehicleId,
         clientId: proforma.clientId,
+        creditOrganizationId: proforma.creditOrganizationId,
         depotId: vehicle.depotId,
         commercialId: proforma.commercialId,
         saleDate: new Date(),

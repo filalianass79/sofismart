@@ -3,6 +3,7 @@ import { formatVehicleTitle } from "@/lib/vehicle-catalog";
 import { getCompanyProfile } from "@/lib/services/company-profile-service";
 import { proformaStatusLabels } from "@/lib/proforma-labels";
 import type { ProformaDocumentData, ClientDocumentBlock } from "@/lib/documents/types";
+import { formatInvoiceClientName } from "@/lib/documents/client-display";
 
 const fuelLabels: Record<string, string> = {
   DIESEL: "Diesel",
@@ -16,11 +17,14 @@ const transmissionLabels: Record<string, string> = {
   AUTOMATIQUE: "Automatique",
 };
 
-function mapTemporaryClient(data: Record<string, unknown>): ClientDocumentBlock {
+function mapTemporaryClient(
+  data: Record<string, unknown>,
+  creditOrganizationName?: string | null,
+): ClientDocumentBlock {
   const type = String(data.type ?? "INDIVIDUAL");
   if (type === "COMPANY") {
     return {
-      name: String(data.companyName ?? "Client professionnel"),
+      name: formatInvoiceClientName(String(data.companyName ?? "Client professionnel"), creditOrganizationName),
       type: "COMPANY",
       cin: null,
       ice: (data.ice as string) ?? null,
@@ -33,7 +37,7 @@ function mapTemporaryClient(data: Record<string, unknown>): ClientDocumentBlock 
   }
   const name = `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim() || "Client particulier";
   return {
-    name,
+    name: formatInvoiceClientName(name, creditOrganizationName),
     type: "INDIVIDUAL",
     cin: (data.cin as string) ?? null,
     ice: null,
@@ -50,6 +54,7 @@ export async function loadProformaDocumentData(proformaId: string): Promise<Prof
     where: { id: proformaId },
     include: {
       client: true,
+      creditOrganization: true,
       commercial: true,
       vehicle: { include: { brand: true, carModel: true } },
       lines: { orderBy: { sortOrder: "asc" } },
@@ -57,9 +62,10 @@ export async function loadProformaDocumentData(proformaId: string): Promise<Prof
   });
 
   const profile = await getCompanyProfile();
+  const creditOrgName = row.creditOrganization?.name ?? null;
   const client: ClientDocumentBlock = row.client
     ? {
-        name: row.client.name,
+        name: formatInvoiceClientName(row.client.name, creditOrgName),
         type: row.client.type,
         cin: row.client.cin,
         ice: row.client.ice,
@@ -69,7 +75,7 @@ export async function loadProformaDocumentData(proformaId: string): Promise<Prof
         email: row.client.email,
         address: [row.client.address, row.client.city].filter(Boolean).join(", ") || null,
       }
-    : mapTemporaryClient((row.temporaryClientData as Record<string, unknown>) ?? {});
+    : mapTemporaryClient((row.temporaryClientData as Record<string, unknown>) ?? {}, creditOrgName);
 
   const vehicle = row.vehicle;
   const grossHT = Number(row.priceHT) + Number(row.accessoryFees);

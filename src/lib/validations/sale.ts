@@ -108,6 +108,8 @@ export const saleWizardSchema = z
     clientId: z.string().optional(),
     newClient: newClientSchema.optional(),
     vehicleId: z.string().min(1),
+    financedByCreditOrg: z.boolean().default(false),
+    creditOrganizationId: z.string().optional(),
     commercialId: z.string().min(1),
     saleDate: z.string(),
     price: z.coerce.number().min(0.01, "Prix de vente requis"),
@@ -149,6 +151,13 @@ export const saleWizardSchema = z
         code: "custom",
         message: "Durée garantie requise",
         path: ["warrantyDurationMonths"],
+      });
+    }
+    if (d.financedByCreditOrg && !d.creditOrganizationId?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Organisme de crédit requis",
+        path: ["creditOrganizationId"],
       });
     }
   });

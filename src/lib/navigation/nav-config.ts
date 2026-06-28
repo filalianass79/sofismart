@@ -243,6 +243,7 @@ export const SETTINGS_NAV: NavItem = {
     { id: "settings-company", href: "/dashboard/settings/company", label: "Société", perm: "parametres.view" },
     { id: "settings-brands", href: "/dashboard/settings/brands", label: "Marques", perm: "parametres.view" },
     { id: "settings-models", href: "/dashboard/settings/models", label: "Modèles", perm: "parametres.view" },
+    { id: "settings-credit-orgs", href: "/dashboard/settings/credit-organizations", label: "Organismes crédit", perm: "parametres.view" },
     { id: "settings-depots", href: "/dashboard/settings/depots", label: "Dépôts", perm: "depots.view" },
     { id: "settings-employees", href: "/dashboard/settings/employees", label: "Salariés", perm: "salaries.view" },
     { id: "settings-users", href: "/dashboard/settings/users", label: "Utilisateurs", perm: "utilisateurs.view" },

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AppLogo } from "@/components/ui/app-logo";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
@@ -13,13 +14,8 @@ export default async function LoginPage() {
       />
       <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-white/95 p-8 shadow-2xl shadow-black/40 backdrop-blur">
         <div className="mb-8 text-center">
-          <h1 className="font-display text-4xl text-navy-950">
-            <span>Sofi</span>
-            <span className="bg-gradient-to-r from-gold-500 to-gold-300 bg-clip-text text-transparent">
-              Smart
-            </span>
-          </h1>
-          <p className="mt-2 text-sm text-navy-600">
+          <AppLogo size="login" priority className="mx-auto" />
+          <p className="mt-4 text-sm text-navy-600">
             Connexion sécurisée à votre espace de gestion
           </p>
         </div>

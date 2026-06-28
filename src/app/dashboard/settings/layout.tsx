@@ -33,6 +33,7 @@ const allTabs = [
   { href: "/dashboard/settings/company", label: "Société", icon: Building2, perm: "parametres.view" },
   { href: "/dashboard/settings/brands", label: "Marques", icon: Tag, perm: "parametres.view" },
   { href: "/dashboard/settings/models", label: "Modèles", icon: Car, perm: "parametres.view" },
+  { href: "/dashboard/settings/credit-organizations", label: "Crédit", icon: Building2, perm: "parametres.view" },
   { href: "/dashboard/settings/depots", label: "Dépôts", icon: Warehouse, perm: "depots.view" },
   { href: "/dashboard/settings/employees", label: "Salariés", icon: UserCircle, perm: "salaries.view" },
   { href: "/dashboard/settings/users", label: "Utilisateurs", icon: UserCog, perm: "utilisateurs.view" },

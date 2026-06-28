@@ -5,6 +5,7 @@ import { memo, useCallback, useEffect, useId, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { DashboardHeaderUser } from "@/components/dashboard-header-user";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { AppLogo } from "@/components/ui/app-logo";
 import { ALL_SEARCH_ENTRIES } from "@/lib/navigation/nav-config";
 import { useNavFilter } from "@/hooks/use-nav-filter";
 import { cn } from "@/lib/utils";
@@ -65,11 +66,8 @@ export const MobileHeader = memo(function MobileHeader({
     <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-navy-950/10 bg-white/95 px-3 py-3 backdrop-blur lg:hidden">
       <SidebarToggle variant="mobile" />
 
-      <Link href="/dashboard" className="min-w-0 flex-1 font-display text-lg text-navy-950">
-        <span>Sofi</span>
-        <span className="bg-gradient-to-r from-gold-600 to-gold-400 bg-clip-text text-transparent">
-          Smart
-        </span>
+      <Link href="/dashboard" className="flex min-w-0 flex-1 items-center">
+        <AppLogo size="compact" />
       </Link>
 
       <div ref={searchRef} className="relative">

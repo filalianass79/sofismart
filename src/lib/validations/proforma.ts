@@ -52,6 +52,8 @@ export const proformaInvoiceSchema = z
     clientId: z.string().optional(),
     newClient: newClientSchema.optional(),
     vehicleId: z.string().min(1),
+    financedByCreditOrg: z.boolean().default(false),
+    creditOrganizationId: z.string().optional(),
     commercialId: z.string().min(1),
     proformaDate: z.string(),
     validityDate: z.string(),
@@ -76,6 +78,13 @@ export const proformaInvoiceSchema = z
     }
     if (d.validityDate < d.proformaDate) {
       ctx.addIssue({ code: "custom", message: "Date validité invalide", path: ["validityDate"] });
+    }
+    if (d.financedByCreditOrg && !d.creditOrganizationId?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Organisme de crédit requis",
+        path: ["creditOrganizationId"],
+      });
     }
   });
 

@@ -15,6 +15,7 @@ import { WizardActions } from "@/components/ui/wizard-actions";
 import { LoadingOverlay } from "@/components/ui/loading";
 import { SaleClientStep } from "./wizard/sale-client-step";
 import { SaleVehicleStep } from "./wizard/sale-vehicle-step";
+import { CreditOrganizationStep } from "./wizard/credit-organization-step";
 import { saleTypeLabels } from "@/lib/sale-labels";
 import { saleWizardSchema, type SaleWizardValues } from "@/lib/validations/sale";
 import { computeSaleAmounts } from "@/lib/finance";
@@ -23,6 +24,7 @@ import { formatMoney } from "@/lib/utils";
 const STEPS: StepItem[] = [
   { id: "client", label: "Client", hint: "Sélection" },
   { id: "vehicle", label: "Véhicule", hint: "Choix stock" },
+  { id: "credit", label: "Crédit", hint: "Organisme" },
   { id: "conditions", label: "Conditions", hint: "Prix, commercial" },
   { id: "payments", label: "Paiements", hint: "Encaissements" },
   { id: "summary", label: "Récap", hint: "Validation" },
@@ -65,6 +67,8 @@ export function SaleWizard({
       clientMode: "EXISTING",
       clientId: "",
       vehicleId: "",
+      financedByCreditOrg: false,
+      creditOrganizationId: "",
       commercialId: defaultCommercialId ?? commercials[0]?.id ?? "",
       saleDate: new Date().toISOString().slice(0, 10),
       price: 0,
@@ -122,11 +126,27 @@ export function SaleWizard({
   const due = amounts?.finalPrice ?? 0;
   const balance = Math.max(0, due - totalPaid);
   const saleType = watch("saleType");
+  const financedByCreditOrg = watch("financedByCreditOrg");
+  const creditOrganizationId = watch("creditOrganizationId");
+  const [creditOrgLabel, setCreditOrgLabel] = useState("");
+
+  useEffect(() => {
+    if (!financedByCreditOrg || !creditOrganizationId) {
+      setCreditOrgLabel("");
+      return;
+    }
+    void fetch("/api/credit-organizations?activeOnly=1")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: { id: string; name: string }[]) => {
+        setCreditOrgLabel(rows.find((o) => o.id === creditOrganizationId)?.name ?? "");
+      });
+  }, [financedByCreditOrg, creditOrganizationId]);
 
   async function validateCurrentStep(): Promise<boolean> {
     if (step === 0) return trigger(["clientMode", "clientId", "newClient"]);
     if (step === 1) return trigger(["vehicleId"]);
-    if (step === 2) return trigger(["commercialId", "price", "discount", "saleDate"]);
+    if (step === 2) return trigger(["financedByCreditOrg", "creditOrganizationId"]);
+    if (step === 3) return trigger(["commercialId", "price", "discount", "saleDate"]);
     return true;
   }
 
@@ -184,6 +204,11 @@ export function SaleWizard({
     () => [
       [truncateStepperText(clientLabel || "—", 28)],
       [vehicleId ? "Véhicule OK" : "—"],
+      [
+        financedByCreditOrg
+          ? truncateStepperText(creditOrgLabel || "Organisme", 24)
+          : "Sans organisme",
+      ],
       amounts
         ? [
             truncateStepperText(formatMoney(amounts.finalPrice), 22),
@@ -197,7 +222,7 @@ export function SaleWizard({
           ? [truncateStepperText(formatMoney(amounts.finalPrice), 22)]
           : [],
     ],
-    [clientLabel, vehicleId, amounts, saleType, totalPaid, submittedSale]
+    [clientLabel, vehicleId, financedByCreditOrg, creditOrgLabel, amounts, saleType, totalPaid, submittedSale]
   );
 
   return (
@@ -230,6 +255,16 @@ export function SaleWizard({
         )}
 
         {step === 2 && (
+          <CreditOrganizationStep
+            onContinue={async () => {
+              const ok = await trigger(["financedByCreditOrg", "creditOrganizationId"]);
+              if (ok) setStep(3);
+              else onFormInvalid(form.formState.errors, "Sélectionnez un organisme de crédit.");
+            }}
+          />
+        )}
+
+        {step === 3 && (
           <section className="rounded-xl border border-navy-950/10 bg-white p-6 shadow-sm">
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm">
@@ -290,7 +325,7 @@ export function SaleWizard({
           </section>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <section className="space-y-3 rounded-xl border border-navy-950/10 bg-white p-6 shadow-sm">
             <div className="flex justify-between text-sm">
               <span>Total dû : {formatMoney(due)}</span>
@@ -328,11 +363,16 @@ export function SaleWizard({
           </section>
         )}
 
-        {step === 4 && !submittedSale && (
+        {step === 5 && !submittedSale && (
           <section className="rounded-xl border border-gold-500/30 bg-gold-500/5 p-6 text-sm space-y-2">
             <p>
               <strong>Client :</strong> {clientLabel}
             </p>
+            {financedByCreditOrg && creditOrgLabel && (
+              <p>
+                <strong>Organisme de crédit :</strong> {creditOrgLabel}
+              </p>
+            )}
             <p>
               <strong>Commercial :</strong> {commercials.find((c) => c.id === commercialId)?.name ?? "—"}
             </p>
@@ -354,7 +394,7 @@ export function SaleWizard({
           </section>
         )}
 
-        {step === 4 && submittedSale?.status === "PENDING_VALIDATION" && (
+        {step === 5 && submittedSale?.status === "PENDING_VALIDATION" && (
           <section className="rounded-xl border border-amber-400/40 bg-amber-50/80 p-6 text-sm space-y-4">
             <p className="flex items-center gap-2 font-semibold text-amber-950">
               <FileCheck className="h-5 w-5" /> Demande envoyée — {submittedSale.reference}
@@ -373,7 +413,7 @@ export function SaleWizard({
           </section>
         )}
 
-        {step === 4 && submittedSale?.status === "VALIDATED" && (
+        {step === 5 && submittedSale?.status === "VALIDATED" && (
           <section className="rounded-xl border border-emerald-600/30 bg-emerald-50/50 p-6 text-sm space-y-4">
             <p className="flex items-center gap-2 font-semibold text-emerald-900">
               <FileCheck className="h-5 w-5" /> Vente {submittedSale.reference} validée
@@ -434,7 +474,7 @@ export function SaleWizard({
             step={step}
             totalSteps={STEPS.length}
             onPrev={() => setStep((s) => s - 1)}
-            showNext={(step >= 2 && step <= 3) || (step === 0 && clientMode === "NEW")}
+            showNext={(step >= 3 && step <= 4) || (step === 0 && clientMode === "NEW")}
             onValidate={() => void handleSubmit(onSubmit, onInvalid)()}
             onNext={async () => {
               const ok = await validateCurrentStep();
@@ -446,7 +486,9 @@ export function SaleWizard({
                     ? (["clientMode", "clientId", "newClient"] as const)
                     : step === 1
                       ? (["vehicleId"] as const)
-                      : (["commercialId", "price", "discount", "saleDate"] as const),
+                      : step === 2
+                        ? (["financedByCreditOrg", "creditOrganizationId"] as const)
+                        : (["commercialId", "price", "discount", "saleDate"] as const),
                 );
                 onFormInvalid(
                   form.formState.errors,
@@ -454,14 +496,16 @@ export function SaleWizard({
                     ? "Complétez les informations du nouveau client."
                     : step === 1
                       ? "Sélectionnez un véhicule."
-                      : "Complétez les conditions de vente.",
+                      : step === 2
+                        ? "Sélectionnez un organisme de crédit."
+                        : "Complétez les conditions de vente.",
                 );
               }
             }}
             onDraft={saveDraft}
             onCancel={() => router.back()}
             loading={loading}
-            isLastStep={step === 4}
+            isLastStep={step === 5}
             submitLabel={canValidateSale ? "Valider la vente" : "Demander la validation"}
           />
         )}

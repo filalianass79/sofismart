@@ -33,6 +33,7 @@ import type {
 } from "@/lib/documents/types";
 import type { DeliveryChecklist } from "@/lib/validations/warehouse";
 import type { ClientType, PaymentMethod, SaleType, VehicleOrigin } from "@/generated/prisma/enums";
+import { formatInvoiceClientName } from "@/lib/documents/client-display";
 
 function mapCompany(profile: Awaited<ReturnType<typeof getCompanyProfile>>): CompanyDocumentBlock {
   return {
@@ -57,20 +58,23 @@ function mapCompany(profile: Awaited<ReturnType<typeof getCompanyProfile>>): Com
   };
 }
 
-function mapClient(client: {
-  name: string;
-  type: ClientType;
-  cin: string | null;
-  ice: string | null;
-  rc: string | null;
-  taxId: string | null;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  city: string | null;
-}): ClientDocumentBlock {
+function mapClient(
+  client: {
+    name: string;
+    type: ClientType;
+    cin: string | null;
+    ice: string | null;
+    rc: string | null;
+    taxId: string | null;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    city: string | null;
+  },
+  creditOrganizationName?: string | null,
+): ClientDocumentBlock {
   return {
-    name: client.name,
+    name: formatInvoiceClientName(client.name, creditOrganizationName),
     type: client.type,
     cin: client.cin,
     ice: client.ice,
@@ -242,6 +246,7 @@ export async function loadSalesInvoiceDocument(saleId: string): Promise<SalesInv
     where: { id: saleId },
     include: {
       client: true,
+      creditOrganization: true,
       vehicle: { include: { brand: true, carModel: true } },
       commercial: { select: { name: true } },
       payments: { orderBy: { paidAt: "asc" } },
@@ -278,7 +283,7 @@ export async function loadSalesInvoiceDocument(saleId: string): Promise<SalesInv
     saleType: saleTypeLabels[sale.saleType as SaleType],
     commercialName: sale.commercial?.name ?? null,
     company: mapCompany(profile),
-    client: mapClient(sale.client),
+    client: mapClient(sale.client, sale.creditOrganization?.name),
     vehicle: mapVehicle(v),
     lines: [
       {

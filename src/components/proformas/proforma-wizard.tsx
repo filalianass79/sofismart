@@ -9,6 +9,7 @@ import { Stepper, type StepItem } from "@/components/ui/stepper";
 import { WizardActions } from "@/components/ui/wizard-actions";
 import { LoadingOverlay } from "@/components/ui/loading";
 import { SaleClientStep } from "@/components/sales/wizard/sale-client-step";
+import { CreditOrganizationStep } from "@/components/sales/wizard/credit-organization-step";
 import { ProformaVehicleStep } from "./proforma-vehicle-step";
 import { ProformaTotalsBox } from "./proforma-totals-box";
 import {
@@ -23,6 +24,7 @@ import { parseApiError } from "@/lib/feedback/parse-api-error";
 const STEPS: StepItem[] = [
   { id: "client", label: "Client", hint: "Sélection" },
   { id: "vehicle", label: "Véhicule", hint: "Stock" },
+  { id: "credit", label: "Crédit", hint: "Organisme" },
   { id: "conditions", label: "Conditions", hint: "Prix & validité" },
   { id: "summary", label: "Récap", hint: "Génération" },
 ];
@@ -57,6 +59,8 @@ export function ProformaWizard({
       clientMode: "EXISTING",
       clientId: "",
       vehicleId: "",
+      financedByCreditOrg: false,
+      creditOrganizationId: "",
       commercialId: defaultCommercialId ?? commercials[0]?.id ?? "",
       proformaDate: new Date().toISOString().slice(0, 10),
       validityDate: defaultValidityDate(),
@@ -87,7 +91,8 @@ export function ProformaWizard({
   async function validateStep(idx: number) {
     if (idx === 0) return trigger(["clientMode", "clientId", "newClient"] as never);
     if (idx === 1) return trigger(["vehicleId"]);
-    if (idx === 2)
+    if (idx === 2) return trigger(["financedByCreditOrg", "creditOrganizationId"] as never);
+    if (idx === 3)
       return trigger([
         "proformaDate",
         "validityDate",
@@ -151,7 +156,8 @@ export function ProformaWizard({
 
         {step === 0 && <SaleClientStep onClientSelected={() => nextStep()} />}
         {step === 1 && <ProformaVehicleStep onVehicleSelected={() => nextStep()} />}
-        {step === 2 && (
+        {step === 2 && <CreditOrganizationStep onContinue={() => nextStep()} />}
+        {step === 3 && (
           <section className="space-y-4 rounded-xl border border-navy-950/10 bg-white p-6 shadow-sm">
             <h3 className="font-display text-xl text-navy-950">Conditions proforma</h3>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -201,7 +207,7 @@ export function ProformaWizard({
             <ProformaTotalsBox amounts={amounts} />
           </section>
         )}
-        {step === 3 && (
+        {step === 4 && (
           <section className="space-y-4 rounded-xl border border-navy-950/10 bg-white p-6 shadow-sm">
             <h3 className="font-display text-xl text-navy-950">Récapitulatif</h3>
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
@@ -215,6 +221,12 @@ export function ProformaWizard({
                   {values.clientMode === "EXISTING" ? values.clientId || "—" : "Nouveau client"}
                 </dd>
               </div>
+              {values.financedByCreditOrg && (
+                <div>
+                  <dt className="text-navy-500">Organisme de crédit</dt>
+                  <dd className="font-medium">{values.creditOrganizationId ? "Sélectionné" : "—"}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-navy-500">Véhicule</dt>
                 <dd className="font-medium">{values.vehicleId ? "Sélectionné" : "—"}</dd>

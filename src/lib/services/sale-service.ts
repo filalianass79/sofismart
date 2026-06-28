@@ -11,6 +11,7 @@ import {
 } from "@/lib/services/sale-validation-notifications";
 import type { PaymentMethod, SaleRecordStatus, SaleType } from "@/generated/prisma/enums";
 import type { SaleWizardValues, NewClientValues } from "@/lib/validations/sale";
+import { resolveCreditOrganizationId } from "@/lib/validations/credit-organization";
 import type { Prisma } from "@/generated/prisma/client";
 
 async function resolveClientId(
@@ -49,10 +50,19 @@ async function resolveClientId(
 
 const saleReturnInclude = {
   client: true,
+  creditOrganization: true,
   vehicle: { include: { brand: true, carModel: true, depot: true } },
   exitVoucher: true,
   commercial: true,
 } as const;
+
+async function assertCreditOrganizationForSale(payload: SaleWizardValues) {
+  const id = resolveCreditOrganizationId(payload);
+  if (!id) return null;
+  const org = await prisma.creditOrganization.findFirst({ where: { id, isActive: true } });
+  if (!org) throw new Error("Organisme de crédit invalide ou inactif");
+  return id;
+}
 
 async function returnSaleById(saleId: string) {
   return prisma.sale.findUnique({ where: { id: saleId }, include: saleReturnInclude });
@@ -115,10 +125,12 @@ async function updateDraftSaleFromWizard(
 
   await prisma.$transaction(async (tx) => {
     const clientId = await resolveClientId(payload, tx, false);
+    const creditOrganizationId = await assertCreditOrganizationForSale(payload);
     await tx.sale.update({
       where: { id: saleId },
       data: {
         clientId,
+        creditOrganizationId,
         depotId: vehicle.depotId,
         commercialId: payload.commercialId ?? userId ?? null,
         saleDate: new Date(payload.saleDate),
@@ -184,6 +196,7 @@ async function completeDraftSaleFromWizard(
   const sale = await prisma.$transaction(async (tx) => {
     const clientId = await resolveClientId(payload, tx, true);
     if (!clientId) throw new Error("Client requis pour soumettre la vente");
+    const creditOrganizationId = await assertCreditOrganizationForSale(payload);
 
     await tx.payment.deleteMany({ where: { saleId } });
 
@@ -191,6 +204,7 @@ async function completeDraftSaleFromWizard(
       where: { id: saleId },
       data: {
         clientId,
+        creditOrganizationId,
         depotId: vehicle.depotId,
         commercialId: payload.commercialId ?? userId ?? null,
         saleDate: new Date(payload.saleDate),
@@ -368,11 +382,13 @@ export async function createSaleFromWizard(
   const sale = await prisma.$transaction(async (tx) => {
     const clientId = await resolveClientId(payload, tx, needsClient);
     if (needsClient && !clientId) throw new Error("Client requis pour soumettre la vente");
+    const creditOrganizationId = needsClient ? await assertCreditOrganizationForSale(payload) : null;
 
     const s = await tx.sale.create({
       data: {
         reference,
         clientId,
+        creditOrganizationId,
         vehicleId: payload.vehicleId,
         depotId: vehicle.depotId,
         commercialId: payload.commercialId ?? userId ?? null,
@@ -503,6 +519,8 @@ export async function validateSale(saleId: string, userId: string) {
     clientId: sale.clientId ?? undefined,
     newClient: draftClient ?? undefined,
     vehicleId: sale.vehicleId,
+    financedByCreditOrg: !!sale.creditOrganizationId,
+    creditOrganizationId: sale.creditOrganizationId ?? undefined,
     commercialId: sale.commercialId ?? userId,
     saleDate: sale.saleDate.toISOString().slice(0, 10),
     price: Number(sale.price),
